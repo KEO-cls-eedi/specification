@@ -1,0 +1,5 @@
+out/
+schemas/CMakeLists.txt
+schemas/validate_examples.py
+schemas/validate_message_schema.py
+doc/OpenIssues.md
