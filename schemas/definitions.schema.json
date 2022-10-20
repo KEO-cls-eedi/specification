@@ -1,0 +1,312 @@
+{
+    "$id": "https://keo-connectivity.de/clseedi/definitions.schema.json",
+    "type": "object",
+    "definitions": {
+        "scalednumber": {
+            "description": "Representation of an arbitrary number where value = number * 10^scale.",
+            "type": "object",
+            "properties": {
+                "number": {
+                    "type": "integer",
+                    "description": "number part"
+                },
+                "scale": {
+                    "type": "integer",
+                    "description": "scale part"
+                }
+            },
+            "required": [
+                "number",
+                "scale"
+            ],
+            "additionalProperties": false
+        },
+        "timestamp": {
+            "type": "integer",
+            "description": "Time since the UNIX epoch (01-01-1970) in seconds",
+            "minimum": 0
+        },
+        "limit": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "integer",
+                    "description": "Power limit [W]",
+                    "minimum": 0
+                },
+                "active": {
+                    "description": "Flag indicating whether the limit has been applied",
+                    "type": "boolean"
+                },
+                "ttl": {
+                    "description": "Duration for which the limit is valid [s]",
+                    "type": "integer",
+                    "minimum": 0
+                }
+            },
+            "required": [
+                "value",
+                "ttl"
+            ],
+            "additionalProperties": false
+        },
+        "measurement": {
+            "description": "A single measurement",
+            "type": "object",
+            "properties": {
+                "value": {
+                    "description": "The current numeric value of the measurement",
+                    "$ref": "file:definitions.schema.json#/definitions/scalednumber"
+                }
+            },
+            "required": [
+                "value"
+            ],
+            "additionalProperties": false
+        },
+        "currentMeasurement": {
+            "description": "Current consumption/production (A) on three phases",
+            "type": "object",
+            "properties": {
+                "a": {
+                    "description": "Current on phase a",
+                    "$ref": "file:definitions.schema.json#/definitions/measurement"
+                },
+                "b": {
+                    "description": "Current on phase b",
+                    "$ref": "file:definitions.schema.json#/definitions/measurement"
+                },
+                "c": {
+                    "description": "Current on phase c",
+                    "$ref": "file:definitions.schema.json#/definitions/measurement"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "a"
+                    ]
+                },
+                {
+                    "required": [
+                        "b"
+                    ]
+                },
+                {
+                    "required": [
+                        "c"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "voltageMeasurement": {
+            "description": "Phase-specific AC voltage in [V]",
+            "type": "object",
+            "properties": {
+                "a-n": {
+                    "$ref": "file:definitions.schema.json#/definitions/measurement",
+                    "description": "Voltage A to neutral"
+                },
+                "b-n": {
+                    "$ref": "file:definitions.schema.json#/definitions/measurement",
+                    "description": "Voltage B to neutral"
+                },
+                "c-n": {
+                    "$ref": "file:definitions.schema.json#/definitions/measurement",
+                    "description": "Voltage C to neutral"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "a-n"
+                    ]
+                },
+                {
+                    "required": [
+                        "b-n"
+                    ]
+                },
+                {
+                    "required": [
+                        "c-n"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "failsafe": {
+            "type": "integer",
+            "description": "A failsafe consumption or production power value [W]",
+            "minimum": 0
+        },
+        "incentiveTableDescriptionTier": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Description of an incentive tier"
+                },
+                "label": {
+                    "type": "string",
+                    "description": "Label of an incentive tier"
+                },
+                "currency": {
+                    "$ref": "file:definitions.schema.json#/definitions/currency",
+                    "description": "Currency of the incentive table"
+                },
+                "tierId": {
+                    "type": "integer",
+                    "description": "Tier ID"
+                },
+                "incentives": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "incentiveId": {
+                                "type": "integer",
+                                "description": "Incentive ID"
+                            },
+                            "incentive": {
+                                "type": "string",
+                                "enum": [
+                                    "absoluteCost",
+                                    "renewableEnergyPercentage",
+                                    "co2Emission"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "incentiveId",
+                            "incentive"
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "tierId",
+                "incentives"
+            ]
+        },
+        "incentiveTableSlot": {
+            "type": "object",
+            "properties": {
+                "startTime": {
+                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
+                    "description": "Start time of the slot"
+                },
+                "endTime": {
+                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
+                    "description": "End time of the slot"
+                },
+                "tiers": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "tierId": {
+                                "type": "integer",
+                                "description": "ID of the tier"
+                            },
+                            "lowerBoundaryValue": {
+                                "$ref": "file:definitions.schema.json#/definitions/scalednumber",
+                                "description": "Lower boundary of the tier [W]"
+                            },
+                            "incentives": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "incentiveId": {
+                                            "type": "integer",
+                                            "description": "ID of the incentive"
+                                        },
+                                        "value": {
+                                            "$ref": "file:definitions.schema.json#/definitions/scalednumber"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "required": [
+                            "tierId",
+                            "lowerBoundaryValue",
+                            "incentives"
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "startTime",
+                "tiers"
+            ],
+            "additionalProperties": false
+        },
+        "tariffSpecializationEnum": {
+            "type": "string",
+            "enum": [
+                "consumptionPoe",
+                "consumptionPoeTf",
+                "consumptionTf",
+                "productionPoe",
+                "productionPoeTf",
+                "productionTf"
+            ]
+        },
+        "tout": {
+            "type": "object",
+            "properties": {
+                "toutSpecialization": {
+                    "description": "Specialization of table: Consumption/Production and Price of Energy/Transmission Fee",
+                    "items": {
+                        "$ref": "file:definitions.schema.json#/definitions/tariffSpecializationEnum"
+                    }
+                },
+                "tiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "file:definitions.schema.json#/definitions/incentiveTableDescriptionTier"
+                    }
+                },
+                "slots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "file:definitions.schema.json#/definitions/incentiveTableSlot"
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "toutSpecialization",
+                "tiers",
+                "slots"
+            ],
+            "additionalProperties": false
+        },
+        "certificate": {
+            "type": "string",
+            "pattern": "^[a-f|0-9]+$",
+            "description": "Certificate (X.509 in DER) as hex string"
+        },
+        "ski": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$",
+            "description": "Subject Key Identifier (SKI)",
+            "minLength": 40,
+            "maxLength": 40,
+            "examples": [
+                "607d3342a4eeb06f33094386644991cd4b80125b"
+            ]
+        },
+        "currency": {
+            "type": "string",
+            "description": "Currency",
+            "enum": [
+                "EUR"
+            ]
+        }
+    }
+}

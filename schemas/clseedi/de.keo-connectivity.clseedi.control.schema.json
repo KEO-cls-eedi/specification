@@ -1,0 +1,123 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "$id": "https://keo-connectivity.de/clseedi/de.keo-connectivity.clseedi.control.schema.json",
+    "title": "Control Message",
+    "description": "The backend sends the desired state to the local device",
+    "type": "object",
+    "properties": {
+        "limits": {
+            "type": "object",
+            "properties": {
+                "consumption": {
+                    "$ref": "file:definitions.schema.json#/definitions/limit"
+                },
+                "production": {
+                    "$ref": "file:definitions.schema.json#/definitions/limit"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "consumption"
+                    ]
+                },
+                {
+                    "required": [
+                        "production"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "failsafes": {
+            "type": "object",
+            "properties": {
+                "consumption": {
+                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                },
+                "production": {
+                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "consumption"
+                    ]
+                },
+                {
+                    "required": [
+                        "production"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "tariffs": {
+            "type": "object",
+            "properties": {
+                "tout": {
+                    "$ref": "file:definitions.schema.json#/definitions/tout"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "tout"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "trust": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "ski": {
+                        "$ref": "file:definitions.schema.json#/definitions/ski"
+                    },
+                    "certificate": {
+                        "$ref": "file:definitions.schema.json#/definitions/certificate"
+                    }
+                },
+                "oneOf": [
+                    {
+                        "required": [
+                            "ski"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "certificate"
+                        ]
+                    }
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "anyOf": [
+        {
+            "required": [
+                "limits"
+            ]
+        },
+        {
+            "required": [
+                "failsafes"
+            ]
+        },
+        {
+            "required": [
+                "tariffs"
+            ]
+        },
+        {
+            "required": [
+                "trust"
+            ]
+        }
+    ],
+    "additionalProperties": false
+}

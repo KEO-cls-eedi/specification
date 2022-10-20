@@ -1,0 +1,9 @@
+{
+    "type": "de.keo-connectivity.clseedi.ack",
+    "source": "some premises",
+    "id": "b21e4dc3-be6d-4287-8d89-77742c82cb29",
+    "specversion": "1.0",
+    "data": {
+        "ack": true
+    }
+}

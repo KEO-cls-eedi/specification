@@ -1,0 +1,17 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "$id": "https://keo-connectivity.de/clseedi/de.keo-connectivity.clseedi.ack.schema.json",
+    "title": "Acknowledgement Message",
+    "description": " Acknowledgement to a message",
+    "type": "object",
+    "properties": {
+        "ack": {
+            "type": "boolean",
+            "description": "Message is acknowledged (true) or not acknowledged (false)"
+        }
+    },
+    "required": [
+        "ack"
+    ],
+    "additionalProperties": false
+}

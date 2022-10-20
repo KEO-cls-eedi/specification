@@ -1,0 +1,156 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "$id": "https://keo-connectivity.de/clseedi/de.keo-connectivity.clseedi.state.schema.json",
+    "title": "State Message",
+    "description": "The local device sends its current state to the backend",
+    "type": "object",
+    "properties": {
+        "limits": {
+            "type": "object",
+            "properties": {
+                "consumption": {
+                    "$ref": "file:definitions.schema.json#/definitions/limit"
+                },
+                "production": {
+                    "$ref": "file:definitions.schema.json#/definitions/limit"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "consumption"
+                    ]
+                },
+                {
+                    "required": [
+                        "production"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "failsafes": {
+            "type": "object",
+            "properties": {
+                "consumption": {
+                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                },
+                "production": {
+                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "consumption"
+                    ]
+                },
+                {
+                    "required": [
+                        "production"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "metering": {
+            "type": "object",
+            "properties": {
+                "frequency": {
+                    "$ref": "file:definitions.schema.json#/definitions/measurement"
+                },
+                "energy": {
+                    "consumed": {
+                        "$ref": "file:definitions.schema.json#/definitions/measurement"
+                    },
+                    "produced": {
+                        "$ref": "file:definitions.schema.json#/definitions/measurement"
+                    }
+                },
+                "voltage": {
+                    "$ref": "file:definitions.schema.json#/definitions/voltageMeasurement"
+                },
+                "current": {
+                    "$ref": "file:definitions.schema.json#/definitions/currentMeasurement"
+                },
+                "power": {
+                    "$ref": "file:definitions.schema.json#/definitions/measurement"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "frequency"
+                    ]
+                },
+                {
+                    "required": [
+                        "energy"
+                    ]
+                },
+                {
+                    "required": [
+                        "voltage"
+                    ]
+                },
+                {
+                    "required": [
+                        "current"
+                    ]
+                },
+                {
+                    "required": [
+                        "voltage"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "configuration": {
+            "type": "object",
+            "properties": {
+                "maxTiersPerSlot": {
+                    "type": "integer",
+                    "description": "The maximum number of tiers per slot. Note that the specification calls this element 'maxTiersPerTariff'",
+                    "minimum": 0
+                },
+                "maxIncentivesPerTier": {
+                    "type": "integer",
+                    "description": "The maximum number of incentives per tier",
+                    "minimum": 0
+                },
+                "maxSlots": {
+                    "type": "integer",
+                    "description": "The maximum number of slots",
+                    "minimum": 0
+                }
+            },
+            "required": [
+                "maxTiersPerSlot",
+                "maxIncentivesPerTier",
+                "maxSlots"
+            ],
+            "additionalProperties": false
+        },
+        "supportedEebusUseCases": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "lpc",
+                    "lpp",
+                    "tout",
+                    "mgcp"
+                ]
+            }
+        }
+    },
+    "required": [
+        "limits",
+        "failsafes",
+        "configuration",
+        "metering",
+        "supportedEebusUseCases"
+    ],
+    "additionalProperties": false
+}

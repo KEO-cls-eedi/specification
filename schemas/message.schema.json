@@ -1,0 +1,120 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "$id": "https://keo-connectivity.de/clseedi/message.schema.json",
+    "title": "CLS.EEDI message specification",
+    "description": "Schema for a CLS.EEDI message",
+    "anyOf": [
+        {
+            "$ref": "file:definitions.schema.json"
+        }
+    ],
+    "type": "object",
+    "properties": {
+        "type": {
+            "description": "The message type",
+            "$comment": "CloudEvents v1.0 'type'",
+            "type": "string",
+            "enum": [
+                "de.keo-connectivity.clseedi.control",
+                "de.keo-connectivity.clseedi.state",
+                "de.keo-connectivity.clseedi.read",
+                "de.keo-connectivity.clseedi.ack"
+            ]
+        },
+        "source": {
+            "description": "The source of the message",
+            "$comment": "CloudEvents v1.0 'source'",
+            "type": "string"
+        },
+        "id": {
+            "description": "The ID of the message",
+            "$comment": "CloudEvents v1.0 'id'",
+            "type": "string"
+        },
+        "relation": {
+            "description": "The ID of the message this message relates to",
+            "$comment": "Only for commands",
+            "type": "string"
+        },
+        "specversion": {
+            "description": "Always 1.0 to express compatibility with CloudEvents",
+            "type": "string",
+            "enum": [
+                "1.0"
+            ]
+        }
+    },
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "de.keo-connectivity.clseedi.control"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "$ref": "file:clseedi/de.keo-connectivity.clseedi.control.schema.json"
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "de.keo-connectivity.clseedi.state"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "$ref": "file:clseedi/de.keo-connectivity.clseedi.state.schema.json"
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "de.keo-connectivity.clseedi.ack"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "$ref": "file:clseedi/de.keo-connectivity.clseedi.ack.schema.json"
+                    }
+                }
+            }
+        },
+        {
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "de.keo-connectivity.clseedi.read"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "data": {
+                        "$ref": "file:clseedi/de.keo-connectivity.clseedi.read.schema.json"
+                    }
+                }
+            }
+        }
+    ],
+    "required": [
+        "type",
+        "source",
+        "id",
+        "specversion",
+        "data"
+    ]
+}
