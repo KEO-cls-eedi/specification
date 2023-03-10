@@ -1,6 +1,6 @@
 # KEO CLS.EEDI
 
-This is the documentation of the KEO CLS.EEDI protocol. KEO CLS.EEDI allows energy grid related backend systems (e.g. aEMT) to exchange energy management related data with local systems (e.g. SMGW, FFN Steuerbox).
+This is the documentation of the KEO CLS.EEDI protocol. KEO CLS.EEDI allows energy grid related backend systems (e.g. aEMT) to exchange energy management related data with local systems (e.g. SMGWs).
 
 Requests for collaboration will be welcomed. Feel free to open issues in this repository or contact cls.eedi@keo-connectivity.de.
 
