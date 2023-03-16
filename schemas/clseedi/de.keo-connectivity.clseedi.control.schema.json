@@ -56,6 +56,11 @@
         "tariffs": {
             "type": "object",
             "properties": {
+                "ackNeeded": {
+                    "type": "boolean",
+                    "description": "Indicates if an acknowledgement is needed",
+                    "default": true
+                },
                 "tout": {
                     "$ref": "file:definitions.schema.json#/definitions/tout"
                 }

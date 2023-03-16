@@ -110,6 +110,9 @@ A Time of Use Tariff (TOUT) always consists of three properties:
 * `tiers` - the incentive tiers
 * `slots` - the slots of the incentive table
 
+Additionaly optional properties are:
+* `ackNeeded` - if set to `true`, the local device must send an `ack` message to the backend after it has applied the tariff information
+
 All tariffs must satisfy the constraints stated in the `configuration` (see section "Configuration").
 
 Please note that the data model for tariff information is under active development. Consider it to be highly preliminary.
