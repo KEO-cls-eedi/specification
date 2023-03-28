@@ -2,7 +2,17 @@
 
 This is the documentation of the KEO CLS.EEDI protocol. KEO CLS.EEDI allows energy grid related backend systems (e.g. aEMT) to exchange energy management related data with local systems (e.g. SMGWs).
 
-Requests for collaboration will be welcomed. Feel free to open issues in this repository or contact cls.eedi@keo-connectivity.de.
+# Collbaration Guidelines
+
+Requests for collaboration will be welcomed. We are very interested to get input from all involved parties and commit to
+moderate discussions on CLS.EEDI within the community. The safest mode of collaboration in this repository is to start a
+discussion first. For this, either open an issue here on GitHub or write an email to cls.eedi@keo-connectivity.de.
+
+If you open a pull request on GitHub make sure to update all related files. For most changes you will need to update
+the descriptions in [docs/clseedi.md](https://github.com/KEO-cls-eedi/specification/blob/main/doc/clseedi.md), update
+the JSON schema files in [schemas/](https://github.com/KEO-cls-eedi/specification/tree/main/schemas) and
+[schemas/clseedi/](https://github.com/KEO-cls-eedi/specification/tree/main/schemas/clseedi/), and update the example
+JSONs in [schemas/clseedi/examples/](https://github.com/KEO-cls-eedi/specification/tree/main/schemas/clseedi/examples).
 
 # Building
 
