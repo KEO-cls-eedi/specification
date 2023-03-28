@@ -1,12 +1,14 @@
 # CLS.EEDI {#clseedi}
 
-This is the documentation of the CLS.EEDI protocol. CLS.EEDI allows backend systems to exchange grid management related data with local systems.
+This is the documentation of the CLS.EEDI protocol. CLS.EEDI allows backend systems to exchange grid management related
+data with local systems.
 
-Please note that CLS.EEDI is under active development. All statements made in this documentation, in the schema files, and in the examples can change at any time.
+Please note that CLS.EEDI is under active development. All statements made in this documentation, in the schema files,
+and in the examples can change at any time.
 
 # Assumptions
 
-- CLS Connection is established
+- CLS connection is established
 - Clocks are synchronized
 
 # Protocol
@@ -42,25 +44,58 @@ The communication primitives are as follows:
 
 # Transport
 
-MQTT shall be used to exchange messages between the backend and a local device. Two topics shall be used to transmit messages:
+MQTT shall be used to exchange messages between the backend and a local device. Two distinct topics shall be used to
+transmit messages:
 
-* one topic for messages from the backend to the local device, e.g. `clseedi/localdevice/27fd7a91-ea48-46bf-adcf-1007e48ea08e` where the last part is a unique identifier of the local device
-* one topic for messages from the local device to the backend, e.g. `clseedi/backend`
+* one topic for messages from the backend to the local device
+* one topic for messages from the local device to the backend
 
-Details on the topic structure remain to be defined.
+This specification does not dictate specific topics. **Close coordination between the backend and the operators of local
+devices to find a suitable and matching scheme for topics is necessary for each deployment in which CLS.EEDI is to be
+used**.
+
+## Example topic scheme
+
+Assuming we have a backend and two local devices:
+
+* Device A with a unique identifier `A`
+* Device B with a unique identifier `B`
+
+The backend wants to send messages to either of those devices. When receiving messages the backend needs to be able to
+identify which local device has sent the message. Topics can be chosen accordingly.
+
+The backend subscribes to `clseedi/from-localdevice/+` to receive messages from both devices. For sending, the backend
+can publish to `clseedi/to-localdevice/A` and `clseedi/to-localdevice/B`. Device A subscribes to
+`clseedi/to-localdevice/A` and publishes to `clseedi/from-localdevice/A`. Device B subscribes to
+`clseedi/to-localdevice/B` and publishes to `clseedi/from-localdevice/B`.
+
+@startuml
+rectangle "Device A" as A
+rectangle "Device B" as B
+cloud Backend
+
+Backend  -l-> A : clseedi/to-localdevice/A
+Backend  -r-> B : clseedi/to-localdevice/B
+Backend <-l-  A : clseedi/from-localdevice/A
+Backend <-r-  B : clseedi/from-localdevice/B
+@enduml
 
 # Data Model
 
-The data model is defined in the form of JSON schemas. Each type (`control`, `state`, `read`) is defined in a distinct file. Two additional files hold everything together:
+The data model is defined in the form of JSON schemas. Each type (`control`, `state`, `read`) is defined in a distinct
+file. Two additional files hold everything together:
 
-* [message.schema.json](message.schema.json) defines the general structure of a CLS.EEDI message. It refers to the distinct payload schemas based on the message type.
-* [definitions.schema.json](definitions.schema.json) defines reusable data types. The payload schemas refer to these type definitions.
+* [message.schema.json](message.schema.json) defines the general structure of a CLS.EEDI message. It refers to the
+  distinct payload schemas based on the message type.
+* [definitions.schema.json](definitions.schema.json) defines reusable data types. The payload schemas refer to these
+  type definitions.
 
 The payload types are explained in the following sections.
 
 ## Control
 
-A control message allows the backend to communicate its desires to the local device. Take a look at the schema and some examples to get started:
+A control message allows the backend to communicate its desires to the local device. Take a look at the schema and some
+examples to get started:
 
 * [schema](clseedi/de.keo-connectivity.clseedi.control.schema.json)
 * examples
@@ -79,40 +114,62 @@ The distinct terms are explained in more detail in the following sections.
 
 ### Limits
 
-Power limits are used to regulate the power consumption or production or both of local premises in terms of the EEBus use cases LPC and LPP.
+Power limits are used to regulate the power consumption or production or both of local premises in terms of the EEBUS
+use cases LPC and LPP.
 
 A power limit always consists of three properties:
 
 * `value` - the limit for active power in W as an integral number
-* `active` - don't care in this direction, only used when sent from the local device to the backend
-* `ttl` - the time in seconds the limit is valid, starting at the time it is received
+* `active` - if set to true the limit is to be applied by the local device, if set to false no limit has to be applied
+* `duration` - the time in seconds the limit is valid, starting at the time it is received
 
-For example, a limit of 5000 W that shall be applied for 3600 seconds (one hour) would be expressed like this:
+For example, a consumption limit of 5000 W that shall be applied for 3600 seconds (one hour) would be expressed like this:
 
 ```
 {
-    "value": 5000,
-    "active": true,
-    "ttl": 3600
+    "limits": {
+        "power": {
+            "active": {
+                "consumption": {
+                    "value": 5000,
+                    "active": true,
+                    "duration": 3600
+                },
+            },
+        },
+    },
 }
 ```
 
-Limits always have a positive value and a positive TTL.
+Limits always have a positive value and a positive duration.
+
+The `active` flag can be used to deactivate a previously set limit.
 
 ### Failsafes
 
-Failsafe limits allow the local device to go into a defined state if EEBus communication is not possible. A failsafe value is expressed in W as an integral number. It represents active power.
+Failsafe limits allow the backend to define a safe state the local device goes into if EEBUS communication in the local
+network is not possible. Semantically, failsafe values are the same as in the EEBUS use cases LPC and LPP. In CLS.EEDI a
+failsafe value is expressed in W as an integral number. It represents active power.
+
+In the EEBUS use cases LPC and LPP there is a heartbeat mechanism to monitor connectivity in the home area network and
+trigger the failsafe state. Because CLS.EEDI is used for wide area communication there is no heartbeat mechanism.
+Consequently, the failsafe state is only related to EEBUS communication in the home area network and not related to CLS
+connectivity between the local device and the backend.
 
 ### Tariffs
 
-A Time of Use Tariff (TOUT) always consists of three properties:
-* `toutSpecialization` - the combination of PoE (Price of Energy) and TF (Transmission Fee) for consumption or production
+Tariffs allow the backend to incentivise load shifting in terms of the EEBUS use case TOUT.
+
+A tariff always consists of three properties:
+* `toutSpecialization` - the combination of PoE (Price of Energy) and TF (Transmission Fee) for consumption or
+  production
 * `tiers` - the incentive tiers
 * `slots` - the slots of the incentive table
 
 All tariffs must satisfy the constraints stated in the `configuration` (see section "Configuration").
 
-Please note that the data model for tariff information is under active development. Consider it to be highly preliminary.
+Please note that the data model for tariff information is under active development. Consider it to be highly
+preliminary.
 
 #### Tout Specialization
 
@@ -310,9 +367,13 @@ Here is an example for this property:
 
 ### Trust
 
-The local device maintains one or more SHIP connections in the local network over which it executes EEBus use cases. The SHIP peer(s) will either be an energy management system (CEM) or one or more power consuming / producing device(s).
+The local device maintains one or more SHIP connections in the local network over which it executes EEBUS use cases. The
+SHIP peer(s) will either be an energy management system (CEM) or one or more power consuming / producing device(s).
 
-Establishing a SHIP connection requires mutual trust. If trust commissioning is not done locally, it can be performed by the backend. The backend can send a list of full certificates or just SKIs (the SHA-1 hash of a certificate's public key) to the local device. The local device will then trust the certificates or the SKIs. A new list fully replaces existing trust.
+Establishing a SHIP connection requires mutual trust. If trust commissioning is not done locally, it can be performed by
+the backend. The backend can send a list of full certificates or just SKIs (the SHA-1 hash of a certificate's public
+key) to the local device. The local device will then trust the certificates or the SKIs. A new list fully replaces
+existing trust.
 
 A trust payload is an array. Each array item can have one of two properties:
 
@@ -324,11 +385,13 @@ Here are two examples:
 * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
 * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
 
-SHIP trust setup usually happens just once, for example during the initial installation of the local devices. It is therefore recommended to use this part of the control payload as rarely as possible.
+SHIP trust setup usually happens just once, for example during the initial installation of the local devices. It is
+therefore recommended to use this part of the control payload as rarely as possible.
 
 ## Acknowledgement
 
-Upon receipt of a `control` message, the local device sends an `ack` message with the information if the `control` message has been accepted or not:
+Upon receipt of a `control` message, the local device sends an `ack` message indicating whether the received message
+is valid or not:
 
 ```
 {
@@ -336,11 +399,7 @@ Upon receipt of a `control` message, the local device sends an `ack` message wit
 }
 ```
 
-Here, `true` means that
-
-* all properties of the message are technically valid
-* all limits contained in the message will be applied
-* all failsafe values contained in the message are accepted
+Here, `true` means that all limits/failsafes/tariffs values contained in the message are valid.
 
 Take a look at the schema and an example:
 
@@ -349,18 +408,32 @@ Take a look at the schema and an example:
 
 ## State
 
-The data model for `state` messages consists of the following properties:
+The data model for `state` messages consists of the following top-level properties:
 
 * `limits` - the current status of the limits for consumption and production
 * `failsafes` - the current failsafe values for consumption and production
+* `tariffs` - energy prices over time
 * `configuration` - the configuration of the local system
-* `supportedEebusUseCases` - an array of EEBus use cases the local device supports
+* `supportedEebusUseCases` - an array of EEBUS use cases the local device supports
 * `metering` - measurements from grid connection point (*GCP)
+
+The backend can read the current state of the local device by sending a `read` message (see section [Read](@ref Read)).
+The local device is obliged to reply all data that is available to it, i.e. fill out all top-level properties of the
+`state` message it can. All properties that are not present in the reply to a `read` message are expected to be
+unavailable or unset on the local device. Consequently, a `state` message caused by a `read` message always represents
+the complete state of the local device and overwrites all previous `state` message received from the local device.
+
+Additionally, a local device can send unsolicited updates of its state. When notifying the state, not all top-level
+properties have to be set. This allows the local device to notify only the properties that have changed. However, all
+top-level properties that are set, have to reflect the complete current state of that top-level element.
+
+Currently, it is not mandatory for a local device to notify state changes.
 
 ### Limits
 
-The `limits` property in the `state` reflects the current limits.
+The `limits` property in the `state` reflects the current limits in terms of the EEBUS use cases LPC and LPP.
 The `active` flag indicates if the limit has been accepted and is active.
+The `duration` indicates the remaining active time in seconds of the limit.
 
 ```
 {
@@ -368,7 +441,7 @@ The `active` flag indicates if the limit has been accepted and is active.
         "consumption": {
             "value": 2000,
             "active": true,
-            "ttl": 3600
+            "duration": 3600
         }
     }
 }
@@ -376,7 +449,8 @@ The `active` flag indicates if the limit has been accepted and is active.
 
 ### Failsafes
 
-The `failsafes` property in the `state` reflects the current failsafe values.
+The `failsafes` property in the `state` reflects the current failsafe values in terms of the EEBUS use cases LPC and
+LPP.
 
 ```
 {
@@ -387,9 +461,18 @@ The `failsafes` property in the `state` reflects the current failsafe values.
 }
 ```
 
+### Tariffs
+
+The `tariffs` property shows the energy prices over time in terms of the EEBUS use case TOUT that are available to the
+local device.
+
+Please note that the data model for tariff information is under active development. Consider it to be highly
+preliminary.
+
 ### Configuration
 
-Information on the configuration of the local device. Currently only used to describe the maximum array sizes for the incentive tables.
+Information on the configuration of the local device. Currently only used to describe the maximum array sizes for the
+incentive tables in terms of the EEBUS use case TOUT.
 
 ```
 {
@@ -403,11 +486,10 @@ A local device that does not support tariff data shall set all three values to z
 
 ### Metering
 
-Measurements from the grid connection point (GCP). EEBus devices can send a
-value state for measurements to indicate an erroneous, or out of bounds
-measurement. Such values are not forwarded to CLS.EEDI. For phase dependent
-measurements (current or voltage), an error on one phase leads to the removal of
-all phase values.
+Measurements from the grid connection point (GCP) in terms of the EEBUS use case MGCP. EEBUS devices can send a value
+state for measurements to indicate an erroneous, or out of bounds measurement. Such values are not forwarded to
+CLS.EEDI. For phase dependent measurements (current or voltage), an error on one phase leads to the removal of all phase
+values.
 
 ```
 {
@@ -466,20 +548,60 @@ all phase values.
 }
 ```
 
-### Supported EEBus use cases
+### Demands
 
-The `supportedEebus UseCases` property describes the EEBus use cases supported by the local device. Supported values are
+The forecast for power demands (consumption/production) from the local device in terms of the EEBUS
+use case "PODF".
+
+
+```
+{
+    "demands": {
+        "power": {
+            "active": {
+                "slots": [
+                    {
+                        "startTime": 1676464774,
+                        "duration": 1800,
+                        "pMin": -400,
+                        "pMax": 1200,
+                        "pExp": 200
+                    },
+                    {
+                        "startTime": 1676466574,
+                        "duration": 10800,
+                        "pMin": -400,
+                        "pMax": 12000,
+                        "pExp": 11234
+                    },
+                    {
+                        "startTime": 1676477374,
+                        "duration": 21600,
+                        "pExp": 450
+                    }
+                ]
+            }
+        }
+    }
+}
+```
+
+### Supported EEBUS use cases
+
+The `supportedEebusUseCases` property describes the EEBUS use cases supported by the local device. Supported values are
 * `lpc` - Limitation of Power Consumption - a consumption limit and a consumption failsafe map to this use case
 * `lpp` - Limitation of power production - a production limit and a production failsafe map to this use case
 * `tout` - Time of Use Tariff - tariff data maps to this use case
 * `mgcp` - Monitoring of Grid Connection Point - metering data maps to this use case
+* `podf` - Power Demand Forecast - demands active data maps to this use case
 
 ```
 [
     "lpc",
     "lpp",
     "tout",
-    "mgcp"
+    "mgcp",
+    "podf"
 ]
 ```
 
@@ -488,9 +610,12 @@ Take a look at the schema and an example:
 * [schema](clseedi/de.keo-connectivity.clseedi.state.schema.json)
 * [example](clseedi/examples/de.keo-connectivity.clseedi.state.json)
 
-The presence of an EEBus use case in this array indicates that the use case can be performed with at least one local device to which a SHIP connection exists. If this condition changes, for example because the SHIP connection fails or the use case specific heartbeat is missing, the use case shall be removed from the array. A status message shall be sent to the backend immediately after the change.
+The presence of an EEBUS use case in this array indicates that the use case can be performed with at least one local
+device to which a SHIP connection exists. If this condition changes, for example because the SHIP connection fails or
+the use case specific heartbeat is missing, the use case shall be removed from the array. A status message shall be sent
+to the backend immediately after the change.
 
-## Read
+## Read {#Read}
 
 Either side of the connection can send a `read` message to the other side. Upon receipt of a `read` message,
 

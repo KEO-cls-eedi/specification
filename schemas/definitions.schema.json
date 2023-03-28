@@ -8,11 +8,15 @@
             "properties": {
                 "number": {
                     "type": "integer",
-                    "description": "number part"
+                    "description": "number part (int64)",
+                    "minimum": -9223372036854775808,
+                    "maximum": 9223372036854775807
                 },
                 "scale": {
                     "type": "integer",
-                    "description": "scale part"
+                    "description": "scale part (int16)",
+                    "minimum": -32768,
+                    "maximum": 32767
                 }
             },
             "required": [
@@ -23,30 +27,33 @@
         },
         "timestamp": {
             "type": "integer",
-            "description": "Time since the UNIX epoch (01-01-1970) in seconds",
-            "minimum": 0
+            "description": "Time since the UNIX epoch (01-01-1970) in seconds (int64)",
+            "minimum": 0,
+            "maximum": 9223372036854775807
         },
         "limit": {
             "type": "object",
             "properties": {
                 "value": {
                     "type": "integer",
-                    "description": "Power limit [W]",
-                    "minimum": 0
+                    "description": "Power limit [W] (int64)",
+                    "minimum": 0,
+                    "maximum": 9223372036854775807
                 },
                 "active": {
                     "description": "Flag indicating whether the limit has been applied",
                     "type": "boolean"
                 },
-                "ttl": {
-                    "description": "Duration for which the limit is valid [s]",
+                "duration": {
+                    "description": "Duration for which the limit is valid [s] (uint32)",
                     "type": "integer",
-                    "minimum": 0
+                    "minimum": 0,
+                    "maximum": 4294967295
                 }
             },
             "required": [
                 "value",
-                "ttl"
+                "duration"
             ],
             "additionalProperties": false
         },
@@ -138,19 +145,22 @@
         },
         "failsafe": {
             "type": "integer",
-            "description": "A failsafe consumption or production power value [W]",
-            "minimum": 0
+            "description": "A failsafe consumption or production power value [W] (int64)",
+            "minimum": 0,
+            "maximum": 9223372036854775807
         },
         "incentiveTableDescriptionTier": {
             "type": "object",
             "properties": {
                 "description": {
                     "type": "string",
-                    "description": "Description of an incentive tier"
+                    "description": "Description of an incentive tier",
+                    "maxLength": 128
                 },
                 "label": {
                     "type": "string",
-                    "description": "Label of an incentive tier"
+                    "description": "Label of an incentive tier",
+                    "maxLength": 128
                 },
                 "currency": {
                     "$ref": "file:definitions.schema.json#/definitions/currency",
@@ -158,7 +168,9 @@
                 },
                 "tierId": {
                     "type": "integer",
-                    "description": "Tier ID"
+                    "description": "Tier ID (uint32)",
+                    "minimum": 0,
+                    "maximum": 4294967295
                 },
                 "incentives": {
                     "type": "array",
@@ -167,7 +179,9 @@
                         "properties": {
                             "incentiveId": {
                                 "type": "integer",
-                                "description": "Incentive ID"
+                                "description": "Incentive ID (uint32)",
+                                "minimum": 0,
+                                "maximum": 4294967295
                             },
                             "incentive": {
                                 "type": "string",
@@ -208,7 +222,9 @@
                         "properties": {
                             "tierId": {
                                 "type": "integer",
-                                "description": "ID of the tier"
+                                "description": "ID of the tier (uint32)",
+                                "minimum": 0,
+                                "maximum": 4294967295
                             },
                             "lowerBoundaryValue": {
                                 "$ref": "file:definitions.schema.json#/definitions/scalednumber",
@@ -221,7 +237,9 @@
                                     "properties": {
                                         "incentiveId": {
                                             "type": "integer",
-                                            "description": "ID of the incentive"
+                                            "description": "ID of the incentive (uint32)",
+                                            "minimum": 0,
+                                            "maximum": 4294967295
                                         },
                                         "value": {
                                             "$ref": "file:definitions.schema.json#/definitions/scalednumber"
@@ -307,6 +325,76 @@
             "enum": [
                 "EUR"
             ]
+        },
+        "demands": {
+            "type": "object",
+            "description": "Demand forecasts",
+            "properties": {
+                "power": {
+                    "type": "object",
+                    "description": "Power demands",
+                    "properties": {
+                        "active": {
+                            "type": "object",
+                            "description": "Active power forecast (PODF)",
+                            "properties": {
+                                "slots": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "startTime": {
+                                                "$ref": "file:definitions.schema.json#/definitions/timestamp",
+                                                "description": "Time since the UNIX epoch (01-01-1970) in seconds (int64)"
+                                            },
+                                            "duration": {
+                                                "$ref": "file:definitions.schema.json#/definitions/timestamp",
+                                                "description": "Duration for which the slot is valid [s] (int64)"
+                                            },
+                                            "pMin": {
+                                                "type": "integer",
+                                                "description": "Minimum value [W] (int64)",
+                                                "minimum": -9223372036854775808,
+                                                "maximum": 9223372036854775807
+                                            },
+                                            "pMax": {
+                                                "type": "integer",
+                                                "description": "Maximum value [W] (int64)",
+                                                "minimum": -9223372036854775808,
+                                                "maximum": 9223372036854775807
+                                            },
+                                            "pExp": {
+                                                "type": "integer",
+                                                "description": "Expected/average value [W] (int64)",
+                                                "minimum": -9223372036854775808,
+                                                "maximum": 9223372036854775807
+                                            }
+                                        },
+                                        "required": [
+                                            "startTime",
+                                            "duration",
+                                            "pExp"
+                                        ],
+                                        "additionalProperties": false
+                                    }
+                                }
+                            },
+                            "required": [
+                                "slots"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "active"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "power"
+            ],
+            "additionalProperties": false
         }
     }
 }

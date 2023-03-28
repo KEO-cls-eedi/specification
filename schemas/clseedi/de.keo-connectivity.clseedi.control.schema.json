@@ -8,22 +8,48 @@
         "limits": {
             "type": "object",
             "properties": {
-                "consumption": {
-                    "$ref": "file:definitions.schema.json#/definitions/limit"
-                },
-                "production": {
-                    "$ref": "file:definitions.schema.json#/definitions/limit"
+                "power": {
+                    "type": "object",
+                    "properties": {
+                        "active": {
+                            "type": "object",
+                            "properties": {
+                                "consumption": {
+                                    "$ref": "file:definitions.schema.json#/definitions/limit"
+                                },
+                                "production": {
+                                    "$ref": "file:definitions.schema.json#/definitions/limit"
+                                }
+                            },
+                            "anyOf": [
+                                {
+                                    "required": [
+                                        "consumption"
+                                    ]
+                                },
+                                {
+                                    "required": [
+                                        "production"
+                                    ]
+                                }
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "anyOf": [
+                        {
+                            "required": [
+                                "active"
+                            ]
+                        }
+                    ],
+                    "additionalProperties": false
                 }
             },
             "anyOf": [
                 {
                     "required": [
-                        "consumption"
-                    ]
-                },
-                {
-                    "required": [
-                        "production"
+                        "power"
                     ]
                 }
             ],

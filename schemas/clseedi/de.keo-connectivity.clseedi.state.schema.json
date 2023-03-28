@@ -53,6 +53,22 @@
             ],
             "additionalProperties": false
         },
+        "tariffs": {
+            "type": "object",
+            "properties": {
+                "tout": {
+                    "$ref": "file:definitions.schema.json#/definitions/tout"
+                }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "tout"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
         "metering": {
             "type": "object",
             "properties": {
@@ -100,7 +116,7 @@
                 },
                 {
                     "required": [
-                        "voltage"
+                        "power"
                     ]
                 }
             ],
@@ -140,17 +156,14 @@
                     "lpc",
                     "lpp",
                     "tout",
-                    "mgcp"
+                    "mgcp",
+                    "podf"
                 ]
             }
+        },
+        "demands": {
+            "$ref": "file:definitions.schema.json#/definitions/demands"
         }
     },
-    "required": [
-        "limits",
-        "failsafes",
-        "configuration",
-        "metering",
-        "supportedEebusUseCases"
-    ],
     "additionalProperties": false
 }

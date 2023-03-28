@@ -8,7 +8,7 @@
             "consumption": {
                 "value": 2000,
                 "active": true,
-                "ttl": 3600
+                "duration": 3600
             }
         },
         "failsafes": {
@@ -83,6 +83,33 @@
                 }
             }
         },
+        "demands": {
+            "power": {
+                "active": {
+                    "slots": [
+                        {
+                            "startTime": 1676464774,
+                            "duration": 1800,
+                            "pMin": -400,
+                            "pMax": 1200,
+                            "pExp": 200
+                        },
+                        {
+                            "startTime": 1676466574,
+                            "duration": 10800,
+                            "pMin": -400,
+                            "pMax": 12000,
+                            "pExp": 11234
+                        },
+                        {
+                            "startTime": 1676477374,
+                            "duration": 21600,
+                            "pExp": 450
+                        }
+                    ]
+                }
+            }
+        },
         "configuration": {
             "maxTiersPerSlot": 5,
             "maxIncentivesPerTier": 6,
@@ -91,6 +118,7 @@
         "supportedEebusUseCases": [
             "lpc",
             "lpp",
+            "podf",
             "tout"
         ]
     }
