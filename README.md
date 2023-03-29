@@ -2,7 +2,7 @@
 
 This is the documentation of the KEO CLS.EEDI protocol. KEO CLS.EEDI allows energy grid related backend systems (e.g. aEMT) to exchange energy management related data with local systems (e.g. SMGWs).
 
-# Collbaration Guidelines
+# Collaboration Guidelines
 
 Requests for collaboration will be welcomed. We are very interested to get input from all involved parties and commit to
 moderate discussions on CLS.EEDI within the community. The safest mode of collaboration in this repository is to start a
