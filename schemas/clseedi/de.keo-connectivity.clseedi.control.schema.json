@@ -58,22 +58,48 @@
         "failsafes": {
             "type": "object",
             "properties": {
-                "consumption": {
-                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
-                },
-                "production": {
-                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                "power": {
+                    "type": "object",
+                    "properties": {
+                        "active": {
+                            "type": "object",
+                            "properties": {
+                                "consumption": {
+                                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                                },
+                                "production": {
+                                    "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                                }
+                            },
+                            "anyOf": [
+                                {
+                                    "required": [
+                                        "consumption"
+                                    ]
+                                },
+                                {
+                                    "required": [
+                                        "production"
+                                    ]
+                                }
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "anyOf": [
+                        {
+                            "required": [
+                                "active"
+                            ]
+                        }
+                    ],
+                    "additionalProperties": false
                 }
             },
             "anyOf": [
                 {
                     "required": [
-                        "consumption"
-                    ]
-                },
-                {
-                    "required": [
-                        "production"
+                        "power"
                     ]
                 }
             ],

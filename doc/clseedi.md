@@ -100,15 +100,24 @@ examples to get started:
 * [schema](clseedi/de.keo-connectivity.clseedi.control.schema.json)
 * examples
   * [Setting limits, tariff and trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.json)
+  * [Setting a tariff](clseedi/examples/de.keo-connectivity.clseedi.control.tariff.json)
   * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
   * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
 
-The control payload can have the following properties:
+The control payload can have the following top-level properties:
 
 * `limits` - a power consumption limit (LPC), a power production limit (LPP), or both
 * `failsafes` - a failsafe power consumption limit (LPC), a failsafe power production limit (LPP), or both
 * `tariffs` - time of use tariff information (TOUT)
 * `trust` - a certificate or an SKI to be trusted for the SHIP connection the local device maintains
+
+Each top-level property that is set, overwrites previous values that have been communicated for that property fully.
+Top-level properties that are not present in a `control` message are expected to remain unchanged. The only two
+exceptions to this are that it is possible to send a `limits` and `failsafes` top-level property with either only a
+consumption or only a production power limit/failsafe limit. This will not clear the limit of the other kind. For
+example, if the backend has at one point sent a `control` message with both a consumption and a production power limit,
+and at a later point in time sends a `control` message with only a consumption power limit, the production power limit
+is expected to remain unchanged.
 
 The distinct terms are explained in more detail in the following sections.
 
@@ -158,7 +167,7 @@ connectivity between the local device and the backend.
 
 ### Tariffs
 
-Tariffs allow the backend to incentivise load shifting in terms of the EEBUS use case TOUT.
+Tariffs allow the backend to incentivize load shifting in terms of the EEBUS use case TOUT.
 
 A tariff always consists of three properties:
 * `toutSpecialization` - the combination of PoE (Price of Energy) and TF (Transmission Fee) for consumption or
@@ -168,8 +177,9 @@ A tariff always consists of three properties:
 
 All tariffs must satisfy the constraints stated in the `configuration` (see section "Configuration").
 
-Please note that the data model for tariff information is under active development. Consider it to be highly
-preliminary.
+Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.control.tariff.json) demonstrating how to set a tariff.
+
+@note The data model for tariff information is under active development. Consider it to be highly preliminary.
 
 #### Tout Specialization
 
@@ -180,14 +190,6 @@ The property `toutSpecialization` is one of
 * `productionPoe`
 * `productionPoeTf`
 * `productionTf`
-
-Here is an example for this property:
-
-```
-{
-    "toutSpecialization": "consumptionPoe"
-}
-```
 
 #### Tiers
 
@@ -203,45 +205,6 @@ The property `tiers` is an array of
   * `renewableEnergyPercentage`
   * `co2Emission`
 
-Here is an example for this property:
-
-```
-[
-    {
-        "tierId": 0,
-        "description": "tier description 0",
-        "label": "tier label 0",
-        "currency": "EUR",
-        "incentives": [
-            {
-                "incentiveId": 0,
-                "incentive": "absoluteCost"
-            },
-            {
-                "incentiveId": 1,
-                "incentive": "renewableEnergyPercentage"
-            }
-        ]
-    },
-    {
-        "tierId": 1,
-        "description": "tier description 1",
-        "label": "tier label 1",
-        "currency": "EUR",
-        "incentives": [
-            {
-                "incentiveId": 0,
-                "incentive": "absoluteCost"
-            },
-            {
-                "incentiveId": 1,
-                "incentive": "renewableEnergyPercentage"
-            }
-        ]
-    }
-]
-```
-
 #### Slots
 
 The property `slots` always consists of three properties:
@@ -253,117 +216,6 @@ The property `slots` always consists of three properties:
  * `incentives` - is an array of
   * `incentiveId` - ID of the incentive
   * `value` - the value as scaled number
-
-Here is an example for this property:
-
-```
-[
-    {
-        "startTime": 514862580,
-        "endTime": 514862880,
-        "tiers": [
-            {
-                "tierId": 0,
-                "incentives": [
-                    {
-                        "incentiveId": 0,
-                        "value": {
-                            "number": 23,
-                            "scale": -5
-                        }
-                    },
-                    {
-                        "incentiveId": 1,
-                        "value": {
-                            "number": 65,
-                            "scale": 0
-                        }
-                    }
-                ],
-                "lowerBoundaryValue": {
-                    "number": 0,
-                    "scale": 0
-                }
-            },
-            {
-                "tierId": 1,
-                "incentives": [
-                    {
-                        "incentiveId": 0,
-                        "value": {
-                            "number": 34,
-                            "scale": 0
-                        }
-                    },
-                    {
-                        "incentiveId": 1,
-                        "value": {
-                            "number": 6,
-                            "scale": 0
-                        }
-                    }
-                ],
-                "lowerBoundaryValue": {
-                    "number": 2,
-                    "scale": 3
-                }
-            }
-        ]
-    },
-    {
-        "startTime": 514862880,
-        "endTime": 514863180,
-        "tiers": [
-            {
-                "tierId": 0,
-                "incentives": [
-                    {
-                        "incentiveId": 0,
-                        "value": {
-                            "number": 25,
-                            "scale": -5
-                        }
-                    },
-                    {
-                        "incentiveId": 1,
-                        "value": {
-                            "number": 67,
-                            "scale": 0
-                        }
-                    }
-                ],
-                "lowerBoundaryValue": {
-                    "number": 0,
-                    "scale": 0
-                }
-            },
-            {
-                "tierId": 1,
-                "incentives": [
-                    {
-                        "incentiveId": 0,
-                        "value": {
-                            "number": 35,
-                            "scale": 0
-                        }
-                    },
-                    {
-                        "incentiveId": 1,
-                        "value": {
-                            "number": 7,
-                            "scale": 0
-                        }
-                    }
-                ],
-                "lowerBoundaryValue": {
-                    "number": 3,
-                    "scale": 3
-                }
-            }
-        ]
-    }
-]
-```
 
 ### Trust
 
@@ -416,6 +268,7 @@ The data model for `state` messages consists of the following top-level properti
 * `configuration` - the configuration of the local system
 * `supportedEebusUseCases` - an array of EEBUS use cases the local device supports
 * `metering` - measurements from grid connection point (*GCP)
+* `demands` - power demand forecasts from the local device
 
 The backend can read the current state of the local device by sending a `read` message (see section [Read](@ref Read)).
 The local device is obliged to reply all data that is available to it, i.e. fill out all top-level properties of the
@@ -431,17 +284,21 @@ Currently, it is not mandatory for a local device to notify state changes.
 
 ### Limits
 
-The `limits` property in the `state` reflects the current limits in terms of the EEBUS use cases LPC and LPP.
-The `active` flag indicates if the limit has been accepted and is active.
-The `duration` indicates the remaining active time in seconds of the limit.
+The `limits` property in the `state` reflects the current power limits in terms of the EEBUS use cases LPC and LPP.
+The `active` flag indicates if the power limit has been accepted and is active.
+The `duration` indicates the remaining active time in seconds of the power limit.
 
 ```
 {
     "limits": {
-        "consumption": {
-            "value": 2000,
-            "active": true,
-            "duration": 3600
+        "power": {
+            "active": {
+                "consumption": {
+                    "value": 2000,
+                    "active": true,
+                    "duration": 3600
+                }
+            }
         }
     }
 }
@@ -455,8 +312,12 @@ LPP.
 ```
 {
     "failsafes": {
-        "consumption": 0,
-        "production": 0
+        "power": {
+            "active": {
+                "consumption": 0,
+                "production": 0
+            }
+        }
     }
 }
 ```
@@ -550,9 +411,7 @@ values.
 
 ### Demands
 
-The forecast for power demands (consumption/production) from the local device in terms of the EEBUS
-use case "PODF".
-
+The forecast for power demands (consumption/production) from the local device in terms of the EEBUS use case PODF.
 
 ```
 {

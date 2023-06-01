@@ -5,15 +5,28 @@
     "specversion": "1.0",
     "data": {
         "limits": {
-            "consumption": {
-                "value": 2000,
-                "active": true,
-                "duration": 3600
+            "power": {
+                "active": {
+                    "consumption": {
+                        "value": 2000,
+                        "active": true,
+                        "duration": 3600
+                    },
+                    "production": {
+                        "value": 3000,
+                        "active": true,
+                        "duration": 3800
+                    }
+                }
             }
         },
         "failsafes": {
-            "consumption": 0,
-            "production": 0
+            "power": {
+                "active": {
+                    "consumption": 5000,
+                    "production": 3000
+                }
+            }
         },
         "metering": {
             "frequency": {
