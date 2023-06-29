@@ -4,6 +4,7 @@
     "id": "d159036b-242b-4910-8386-01c14f90eb45",
     "specversion": "1.0",
     "data": {
+        "protocol": "1.0.0",
         "trust": [
             {
                 "ski": "607d3342a4eeb06f33094386644991cd4b80125b"

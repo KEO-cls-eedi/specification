@@ -2,6 +2,11 @@
     "$id": "https://keo-connectivity.de/clseedi/definitions.schema.json",
     "type": "object",
     "definitions": {
+        "protocolversion": {
+            "type": "string",
+            "description": "The version of the CLS.EEDI specification the creator of this message implements",
+            "maxLength": 256
+        },
         "scalednumber": {
             "description": "Representation of an arbitrary number where value = number * 10^scale.",
             "type": "object",
@@ -22,8 +27,7 @@
             "required": [
                 "number",
                 "scale"
-            ],
-            "additionalProperties": false
+            ]
         },
         "timestamp": {
             "type": "integer",
@@ -53,9 +57,8 @@
             },
             "required": [
                 "value",
-                "duration"
-            ],
-            "additionalProperties": false
+                "active"
+            ]
         },
         "measurement": {
             "description": "A single measurement",
@@ -68,23 +71,22 @@
             },
             "required": [
                 "value"
-            ],
-            "additionalProperties": false
+            ]
         },
-        "currentMeasurement": {
-            "description": "Current consumption/production (A) on three phases",
+        "phaseSpecifics": {
+            "description": "Phase-specific values",
             "type": "object",
             "properties": {
                 "a": {
-                    "description": "Current on phase a",
+                    "description": "Value on phase a",
                     "$ref": "file:definitions.schema.json#/definitions/measurement"
                 },
                 "b": {
-                    "description": "Current on phase b",
+                    "description": "Value on phase b",
                     "$ref": "file:definitions.schema.json#/definitions/measurement"
                 },
                 "c": {
-                    "description": "Current on phase c",
+                    "description": "Value on phase c",
                     "$ref": "file:definitions.schema.json#/definitions/measurement"
                 }
             },
@@ -104,10 +106,9 @@
                         "c"
                     ]
                 }
-            ],
-            "additionalProperties": false
+            ]
         },
-        "voltageMeasurement": {
+        "voltages": {
             "description": "Phase-specific AC voltage in [V]",
             "type": "object",
             "properties": {
@@ -140,169 +141,13 @@
                         "c-n"
                     ]
                 }
-            ],
-            "additionalProperties": false
+            ]
         },
         "failsafe": {
             "type": "integer",
             "description": "A failsafe consumption or production power value [W] (int64)",
             "minimum": 0,
             "maximum": 9223372036854775807
-        },
-        "incentiveTableDescriptionTier": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "description": "Description of an incentive tier",
-                    "maxLength": 128
-                },
-                "label": {
-                    "type": "string",
-                    "description": "Label of an incentive tier",
-                    "maxLength": 128
-                },
-                "currency": {
-                    "$ref": "file:definitions.schema.json#/definitions/currency",
-                    "description": "Currency of the incentive table"
-                },
-                "tierId": {
-                    "type": "integer",
-                    "description": "Tier ID (uint32)",
-                    "minimum": 0,
-                    "maximum": 4294967295
-                },
-                "incentives": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "incentiveId": {
-                                "type": "integer",
-                                "description": "Incentive ID (uint32)",
-                                "minimum": 0,
-                                "maximum": 4294967295
-                            },
-                            "incentive": {
-                                "type": "string",
-                                "enum": [
-                                    "absoluteCost",
-                                    "renewableEnergyPercentage",
-                                    "co2Emission"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "incentiveId",
-                            "incentive"
-                        ]
-                    }
-                }
-            },
-            "required": [
-                "tierId",
-                "incentives"
-            ]
-        },
-        "incentiveTableSlot": {
-            "type": "object",
-            "properties": {
-                "startTime": {
-                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                    "description": "Start time of the slot"
-                },
-                "endTime": {
-                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                    "description": "End time of the slot"
-                },
-                "tiers": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "tierId": {
-                                "type": "integer",
-                                "description": "ID of the tier (uint32)",
-                                "minimum": 0,
-                                "maximum": 4294967295
-                            },
-                            "lowerBoundaryValue": {
-                                "$ref": "file:definitions.schema.json#/definitions/scalednumber",
-                                "description": "Lower boundary of the tier [W]"
-                            },
-                            "incentives": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "incentiveId": {
-                                            "type": "integer",
-                                            "description": "ID of the incentive (uint32)",
-                                            "minimum": 0,
-                                            "maximum": 4294967295
-                                        },
-                                        "value": {
-                                            "$ref": "file:definitions.schema.json#/definitions/scalednumber"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "required": [
-                            "tierId",
-                            "lowerBoundaryValue",
-                            "incentives"
-                        ]
-                    }
-                }
-            },
-            "required": [
-                "startTime",
-                "tiers"
-            ],
-            "additionalProperties": false
-        },
-        "tariffSpecializationEnum": {
-            "type": "string",
-            "enum": [
-                "consumptionPoe",
-                "consumptionPoeTf",
-                "consumptionTf",
-                "productionPoe",
-                "productionPoeTf",
-                "productionTf"
-            ]
-        },
-        "tout": {
-            "type": "object",
-            "properties": {
-                "toutSpecialization": {
-                    "description": "Specialization of table: Consumption/Production and Price of Energy/Transmission Fee",
-                    "items": {
-                        "$ref": "file:definitions.schema.json#/definitions/tariffSpecializationEnum"
-                    }
-                },
-                "tiers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "file:definitions.schema.json#/definitions/incentiveTableDescriptionTier"
-                    }
-                },
-                "slots": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "file:definitions.schema.json#/definitions/incentiveTableSlot"
-                    },
-                    "minItems": 1,
-                    "uniqueItems": true
-                }
-            },
-            "required": [
-                "toutSpecialization",
-                "tiers",
-                "slots"
-            ],
-            "additionalProperties": false
         },
         "certificate": {
             "type": "string",
@@ -319,82 +164,37 @@
                 "607d3342a4eeb06f33094386644991cd4b80125b"
             ]
         },
-        "currency": {
+        "source": {
+            "description": "The source of measurement data.",
             "type": "string",
-            "description": "Currency",
-            "enum": [
-                "EUR"
-            ]
+            "maxLength": 256
         },
-        "demands": {
+        "notify": {
             "type": "object",
-            "description": "Demand forecasts",
             "properties": {
-                "power": {
-                    "type": "object",
-                    "description": "Power demands",
-                    "properties": {
-                        "active": {
-                            "type": "object",
-                            "description": "Active power forecast (PODF)",
-                            "properties": {
-                                "slots": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "startTime": {
-                                                "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                                                "description": "Time since the UNIX epoch (01-01-1970) in seconds (int64)"
-                                            },
-                                            "duration": {
-                                                "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                                                "description": "Duration for which the slot is valid [s] (int64)"
-                                            },
-                                            "pMin": {
-                                                "type": "integer",
-                                                "description": "Minimum value [W] (int64)",
-                                                "minimum": -9223372036854775808,
-                                                "maximum": 9223372036854775807
-                                            },
-                                            "pMax": {
-                                                "type": "integer",
-                                                "description": "Maximum value [W] (int64)",
-                                                "minimum": -9223372036854775808,
-                                                "maximum": 9223372036854775807
-                                            },
-                                            "pExp": {
-                                                "type": "integer",
-                                                "description": "Expected/average value [W] (int64)",
-                                                "minimum": -9223372036854775808,
-                                                "maximum": 9223372036854775807
-                                            }
-                                        },
-                                        "required": [
-                                            "startTime",
-                                            "duration",
-                                            "pExp"
-                                        ],
-                                        "additionalProperties": false
-                                    }
-                                }
-                            },
-                            "required": [
-                                "slots"
-                            ],
-                            "additionalProperties": false
-                        }
-                    },
-                    "required": [
-                        "active"
-                    ],
-                    "additionalProperties": false
+                "interval": {
+                    "description": "Seconds between notifications (uint32)",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4294967295
+                },
+                "endTime": {
+                    "description": "The timestamp indicating the end of the notification period",
+                    "$ref": "file:definitions.schema.json#/definitions/timestamp"
+                },
+                "source": {
+                    "description": "The source of measurement data.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "file:definitions.schema.json#/definitions/source"
+                    }
                 }
             },
             "required": [
-                "power"
-            ],
-            "additionalProperties": false
+                "interval",
+                "endTime",
+                "source"
+            ]
         }
     }
 }

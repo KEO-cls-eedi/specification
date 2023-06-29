@@ -5,6 +5,9 @@
     "description": "The backend sends the desired state to the local device",
     "type": "object",
     "properties": {
+        "protocol": {
+            "$ref": "file:definitions.schema.json#/definitions/protocolversion"
+        },
         "limits": {
             "type": "object",
             "properties": {
@@ -20,40 +23,11 @@
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/limit"
                                 }
-                            },
-                            "anyOf": [
-                                {
-                                    "required": [
-                                        "consumption"
-                                    ]
-                                },
-                                {
-                                    "required": [
-                                        "production"
-                                    ]
-                                }
-                            ],
-                            "additionalProperties": false
+                            }
                         }
-                    },
-                    "anyOf": [
-                        {
-                            "required": [
-                                "active"
-                            ]
-                        }
-                    ],
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "anyOf": [
-                {
-                    "required": [
-                        "power"
-                    ]
-                }
-            ],
-            "additionalProperties": false
+            }
         },
         "failsafes": {
             "type": "object",
@@ -70,56 +44,11 @@
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/failsafe"
                                 }
-                            },
-                            "anyOf": [
-                                {
-                                    "required": [
-                                        "consumption"
-                                    ]
-                                },
-                                {
-                                    "required": [
-                                        "production"
-                                    ]
-                                }
-                            ],
-                            "additionalProperties": false
+                            }
                         }
-                    },
-                    "anyOf": [
-                        {
-                            "required": [
-                                "active"
-                            ]
-                        }
-                    ],
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "anyOf": [
-                {
-                    "required": [
-                        "power"
-                    ]
-                }
-            ],
-            "additionalProperties": false
-        },
-        "tariffs": {
-            "type": "object",
-            "properties": {
-                "tout": {
-                    "$ref": "file:definitions.schema.json#/definitions/tout"
-                }
-            },
-            "anyOf": [
-                {
-                    "required": [
-                        "tout"
-                    ]
-                }
-            ],
-            "additionalProperties": false
+            }
         },
         "trust": {
             "type": "array",
@@ -132,44 +61,14 @@
                     "certificate": {
                         "$ref": "file:definitions.schema.json#/definitions/certificate"
                     }
-                },
-                "oneOf": [
-                    {
-                        "required": [
-                            "ski"
-                        ]
-                    },
-                    {
-                        "required": [
-                            "certificate"
-                        ]
-                    }
-                ],
-                "additionalProperties": false
+                }
             }
+        },
+        "notify": {
+            "$ref": "file:definitions.schema.json#/definitions/notify"
         }
     },
-    "anyOf": [
-        {
-            "required": [
-                "limits"
-            ]
-        },
-        {
-            "required": [
-                "failsafes"
-            ]
-        },
-        {
-            "required": [
-                "tariffs"
-            ]
-        },
-        {
-            "required": [
-                "trust"
-            ]
-        }
-    ],
-    "additionalProperties": false
+    "required": [
+        "protocol"
+    ]
 }
