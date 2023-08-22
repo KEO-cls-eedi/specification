@@ -4,6 +4,19 @@
     "title": "Read Message",
     "description": "The one end asks the other end for an update",
     "type": "object",
-    "properties": {},
-    "additionalProperties": false
+    "properties": {
+        "protocol": {
+            "$ref": "file:definitions.schema.json#/definitions/protocolversion"
+        },
+        "parameters": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Specifies the desired information to be retrieved. An empty value indicates that all available data shall be included."
+        }
+    },
+    "required": [
+        "protocol"
+    ]
 }

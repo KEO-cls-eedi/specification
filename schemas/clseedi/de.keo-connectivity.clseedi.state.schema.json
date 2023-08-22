@@ -5,6 +5,9 @@
     "description": "The local device sends its current state to the backend",
     "type": "object",
     "properties": {
+        "protocol": {
+            "$ref": "file:definitions.schema.json#/definitions/protocolversion"
+        },
         "limits": {
             "type": "object",
             "properties": {
@@ -20,40 +23,11 @@
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/limit"
                                 }
-                            },
-                            "anyOf": [
-                                {
-                                    "required": [
-                                        "consumption"
-                                    ]
-                                },
-                                {
-                                    "required": [
-                                        "production"
-                                    ]
-                                }
-                            ],
-                            "additionalProperties": false
+                            }
                         }
-                    },
-                    "anyOf": [
-                        {
-                            "required": [
-                                "active"
-                            ]
-                        }
-                    ],
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "anyOf": [
-                {
-                    "required": [
-                        "power"
-                    ]
-                }
-            ],
-            "additionalProperties": false
+            }
         },
         "failsafes": {
             "type": "object",
@@ -70,40 +44,11 @@
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/failsafe"
                                 }
-                            },
-                            "anyOf": [
-                                {
-                                    "required": [
-                                        "consumption"
-                                    ]
-                                },
-                                {
-                                    "required": [
-                                        "production"
-                                    ]
-                                }
-                            ],
-                            "additionalProperties": false
+                            }
                         }
-                    },
-                    "anyOf": [
-                        {
-                            "required": [
-                                "active"
-                            ]
-                        }
-                    ],
-                    "additionalProperties": false
+                    }
                 }
-            },
-            "anyOf": [
-                {
-                    "required": [
-                        "power"
-                    ]
-                }
-            ],
-            "additionalProperties": false
+            }
         },
         "tariffs": {
             "type": "object",
@@ -111,68 +56,54 @@
                 "tout": {
                     "$ref": "file:definitions.schema.json#/definitions/tout"
                 }
-            },
-            "anyOf": [
-                {
-                    "required": [
-                        "tout"
-                    ]
-                }
-            ],
-            "additionalProperties": false
+            }
         },
-        "metering": {
-            "type": "object",
-            "properties": {
-                "frequency": {
-                    "$ref": "file:definitions.schema.json#/definitions/measurement"
-                },
-                "energy": {
-                    "consumed": {
+        "measurements": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "A unique ID representing a set of measurement values.",
+                        "maxLength": 256
+                    },
+                    "source": {
+                        "$ref": "file:definitions.schema.json#/definitions/source"
+                    },
+                    "frequency": {
                         "$ref": "file:definitions.schema.json#/definitions/measurement"
                     },
-                    "produced": {
-                        "$ref": "file:definitions.schema.json#/definitions/measurement"
+                    "energy": {
+                        "consumed": {
+                            "$ref": "file:definitions.schema.json#/definitions/measurement"
+                        },
+                        "produced": {
+                            "$ref": "file:definitions.schema.json#/definitions/measurement"
+                        }
+                    },
+                    "voltage": {
+                        "$ref": "file:definitions.schema.json#/definitions/voltages"
+                    },
+                    "current": {
+                        "description": "Phase-specific current values (A)",
+                        "$ref": "file:definitions.schema.json#/definitions/phaseSpecifics"
+                    },
+                    "power": {
+                        "total": {
+                            "$ref": "file:definitions.schema.json#/definitions/measurement"
+                        },
+                        "phases": {
+                            "description": "Phase-specific power values (W)",
+                            "$ref": "file:definitions.schema.json#/definitions/phaseSpecifics"
+                        }
                     }
                 },
-                "voltage": {
-                    "$ref": "file:definitions.schema.json#/definitions/voltageMeasurement"
-                },
-                "current": {
-                    "$ref": "file:definitions.schema.json#/definitions/currentMeasurement"
-                },
-                "power": {
-                    "$ref": "file:definitions.schema.json#/definitions/measurement"
-                }
-            },
-            "anyOf": [
-                {
-                    "required": [
-                        "frequency"
-                    ]
-                },
-                {
-                    "required": [
-                        "energy"
-                    ]
-                },
-                {
-                    "required": [
-                        "voltage"
-                    ]
-                },
-                {
-                    "required": [
-                        "current"
-                    ]
-                },
-                {
-                    "required": [
-                        "power"
-                    ]
-                }
-            ],
-            "additionalProperties": false
+                "required": [
+                    "id",
+                    "source"
+                ]
+            }
         },
         "configuration": {
             "type": "object",
@@ -197,25 +128,27 @@
                 "maxTiersPerSlot",
                 "maxIncentivesPerTier",
                 "maxSlots"
-            ],
-            "additionalProperties": false
+            ]
         },
         "supportedEebusUseCases": {
             "type": "array",
             "items": {
-                "type": "string",
-                "enum": [
-                    "lpc",
-                    "lpp",
-                    "tout",
-                    "mgcp",
-                    "podf"
-                ]
-            }
+                "type": "string"
+            },
+            "description": "Represents the functionality the local device has discovered in the local network."
         },
         "demands": {
             "$ref": "file:definitions.schema.json#/definitions/demands"
+        },
+        "timestamp": {
+            "$ref": "file:definitions.schema.json#/definitions/timestamp"
+        },
+        "notify": {
+            "$ref": "file:definitions.schema.json#/definitions/notify"
         }
     },
-    "additionalProperties": false
+    "required": [
+        "protocol",
+        "timestamp"
+    ]
 }

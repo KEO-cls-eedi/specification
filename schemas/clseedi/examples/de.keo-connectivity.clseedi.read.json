@@ -3,5 +3,7 @@
     "source": "either end of the connection",
     "id": "b21e4dc3-be6d-4287-8d89-77742c82cb29",
     "specversion": "1.0",
-    "data": {}
+    "data": {
+        "protocol": "0.4.0"
+    }
 }

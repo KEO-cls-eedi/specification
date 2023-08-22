@@ -1,0 +1,20 @@
+{
+    "type": "de.keo-connectivity.clseedi.control",
+    "source": "some backend",
+    "id": "8756d3b2-8716-4dc0-9b63-b2e7edb5def9",
+    "specversion": "1.0",
+    "data": {
+        "protocol": "0.4.0",
+        "limits": {
+            "power": {
+                "active": {
+                    "consumption": {
+                        "value": 2000,
+                        "active": true,
+                        "duration": 3600
+                    }
+                }
+            }
+        }
+    }
+}

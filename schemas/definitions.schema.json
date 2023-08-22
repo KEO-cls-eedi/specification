@@ -2,6 +2,10 @@
     "$id": "https://keo-connectivity.de/clseedi/definitions.schema.json",
     "type": "object",
     "definitions": {
+        "protocolversion": {
+            "type": "string",
+            "description": "The version of the CLS.EEDI specification the creator of this message implements"
+        },
         "scalednumber": {
             "description": "Representation of an arbitrary number where value = number * 10^scale.",
             "type": "object",
@@ -22,8 +26,7 @@
             "required": [
                 "number",
                 "scale"
-            ],
-            "additionalProperties": false
+            ]
         },
         "timestamp": {
             "type": "integer",
@@ -53,9 +56,8 @@
             },
             "required": [
                 "value",
-                "duration"
-            ],
-            "additionalProperties": false
+                "active"
+            ]
         },
         "measurement": {
             "description": "A single measurement",
@@ -68,23 +70,22 @@
             },
             "required": [
                 "value"
-            ],
-            "additionalProperties": false
+            ]
         },
-        "currentMeasurement": {
-            "description": "Current consumption/production (A) on three phases",
+        "phaseSpecifics": {
+            "description": "Phase-specific values",
             "type": "object",
             "properties": {
                 "a": {
-                    "description": "Current on phase a",
+                    "description": "Value on phase a",
                     "$ref": "file:definitions.schema.json#/definitions/measurement"
                 },
                 "b": {
-                    "description": "Current on phase b",
+                    "description": "Value on phase b",
                     "$ref": "file:definitions.schema.json#/definitions/measurement"
                 },
                 "c": {
-                    "description": "Current on phase c",
+                    "description": "Value on phase c",
                     "$ref": "file:definitions.schema.json#/definitions/measurement"
                 }
             },
@@ -104,10 +105,9 @@
                         "c"
                     ]
                 }
-            ],
-            "additionalProperties": false
+            ]
         },
-        "voltageMeasurement": {
+        "voltages": {
             "description": "Phase-specific AC voltage in [V]",
             "type": "object",
             "properties": {
@@ -140,8 +140,7 @@
                         "c-n"
                     ]
                 }
-            ],
-            "additionalProperties": false
+            ]
         },
         "failsafe": {
             "type": "integer",
@@ -174,6 +173,7 @@
                 },
                 "incentives": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {
                         "type": "object",
                         "properties": {
@@ -185,11 +185,7 @@
                             },
                             "incentive": {
                                 "type": "string",
-                                "enum": [
-                                    "absoluteCost",
-                                    "renewableEnergyPercentage",
-                                    "co2Emission"
-                                ]
+                                "description": "The incentive type of this incentive."
                             }
                         },
                         "required": [
@@ -259,19 +255,11 @@
             "required": [
                 "startTime",
                 "tiers"
-            ],
-            "additionalProperties": false
+            ]
         },
         "tariffSpecializationEnum": {
             "type": "string",
-            "enum": [
-                "consumptionPoe",
-                "consumptionPoeTf",
-                "consumptionTf",
-                "productionPoe",
-                "productionPoeTf",
-                "productionTf"
-            ]
+            "description": "Defines which cost the incentive table describes."
         },
         "tout": {
             "type": "object",
@@ -301,8 +289,7 @@
                 "toutSpecialization",
                 "tiers",
                 "slots"
-            ],
-            "additionalProperties": false
+            ]
         },
         "certificate": {
             "type": "string",
@@ -321,10 +308,7 @@
         },
         "currency": {
             "type": "string",
-            "description": "Currency",
-            "enum": [
-                "EUR"
-            ]
+            "description": "A string representing a currency as defined in ISO 4217:2015"
         },
         "demands": {
             "type": "object",
@@ -374,27 +358,54 @@
                                             "startTime",
                                             "duration",
                                             "pExp"
-                                        ],
-                                        "additionalProperties": false
+                                        ]
                                     }
                                 }
                             },
                             "required": [
                                 "slots"
-                            ],
-                            "additionalProperties": false
+                            ]
                         }
                     },
                     "required": [
                         "active"
-                    ],
-                    "additionalProperties": false
+                    ]
                 }
             },
             "required": [
                 "power"
-            ],
-            "additionalProperties": false
+            ]
+        },
+        "source": {
+            "description": "The source of measurement data.",
+            "type": "string"
+        },
+        "notify": {
+            "type": "object",
+            "properties": {
+                "interval": {
+                    "description": "Seconds between notifications (uint32)",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4294967295
+                },
+                "endTime": {
+                    "description": "The timestamp indicating the end of the notification period",
+                    "$ref": "file:definitions.schema.json#/definitions/timestamp"
+                },
+                "source": {
+                    "description": "The source of measurement data.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "file:definitions.schema.json#/definitions/source"
+                    }
+                }
+            },
+            "required": [
+                "interval",
+                "endTime",
+                "source"
+            ]
         }
     }
 }

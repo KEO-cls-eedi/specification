@@ -5,30 +5,7 @@
     "specversion": "1.0",
     "data": {
         "protocol": "0.4.0",
-        "limits": {
-            "power": {
-                "active": {
-                    "consumption": {
-                        "value": 2000,
-                        "active": true,
-                        "duration": 3600
-                    },
-                    "production": {
-                        "value": 3000,
-                        "active": true,
-                        "duration": 3800
-                    }
-                }
-            }
-        },
-        "failsafes": {
-            "power": {
-                "active": {
-                    "consumption": 5000,
-                    "production": 3000
-                }
-            }
-        },
+        "timestamp": 1685368046,
         "measurements": [
             {
                 "id": "b21e4dc3-be6d-4287-8d89-77742c82cb29",
@@ -114,7 +91,7 @@
                 "energy": {
                     "consumed": {
                         "value": {
-                            "number": 2451,
+                            "number": 34,
                             "scale": 0
                         }
                     },
@@ -125,74 +102,55 @@
                         }
                     }
                 },
+                "current": {
+                    "a": {
+                        "value": {
+                            "number": -43,
+                            "scale": -1
+                        }
+                    },
+                    "b": {
+                        "value": {
+                            "number": -52,
+                            "scale": -1
+                        }
+                    },
+                    "c": {
+                        "value": {
+                            "number": -3,
+                            "scale": 0
+                        }
+                    }
+                },
                 "power": {
                     "total": {
                         "value": {
-                            "number": 4567,
+                            "number": -258,
                             "scale": 0
                         }
                     },
                     "phases": {
                         "a": {
                             "value": {
-                                "number": 43,
+                                "number": -24,
                                 "scale": -1
                             }
                         },
                         "b": {
                             "value": {
-                                "number": 0,
+                                "number": -2,
                                 "scale": 0
                             }
                         },
                         "c": {
                             "value": {
-                                "number": 0,
-                                "scale": 0
+                                "number": -27,
+                                "scale": -1
                             }
                         }
                     }
                 }
             }
-        ],
-        "demands": {
-            "power": {
-                "active": {
-                    "slots": [
-                        {
-                            "startTime": 1676464774,
-                            "duration": 1800,
-                            "pMin": -400,
-                            "pMax": 1200,
-                            "pExp": 200
-                        },
-                        {
-                            "startTime": 1676466574,
-                            "duration": 10800,
-                            "pMin": -400,
-                            "pMax": 12000,
-                            "pExp": 11234
-                        },
-                        {
-                            "startTime": 1676477374,
-                            "duration": 21600,
-                            "pExp": 450
-                        }
-                    ]
-                }
-            }
-        },
-        "configuration": {
-            "maxTiersPerSlot": 5,
-            "maxIncentivesPerTier": 6,
-            "maxSlots": 7
-        },
-        "supportedEebusUseCases": [
-            "lpc",
-            "lpp",
-            "podf",
-            "tout"
-        ],
-        "timestamp": 1685368046
+        ]
     }
 }

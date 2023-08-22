@@ -5,13 +5,17 @@
     "description": " Acknowledgement to a message",
     "type": "object",
     "properties": {
-        "ack": {
-            "type": "boolean",
-            "description": "Message is acknowledged (true) or not acknowledged (false)"
+        "protocol": {
+            "$ref": "file:definitions.schema.json#/definitions/protocolversion"
+        },
+        "errorNumber": {
+            "type": "integer",
+            "description": "Error code for acknowledgement. 0 means success. Refer to the documentation for a detailed list.",
+            "minimum": 0
         }
     },
     "required": [
-        "ack"
-    ],
-    "additionalProperties": false
+        "protocol",
+        "errorNumber"
+    ]
 }
