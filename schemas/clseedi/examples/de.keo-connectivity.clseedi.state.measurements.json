@@ -80,7 +80,8 @@
                 }
             },
             {
-                "id": "7010cca85af66efaa50ab22529b0700e",
+                "id": "1KEO0987654321",
+                "idType": "DIN-43863-5",
                 "source": "controllable",
                 "frequency": {
                     "value": {

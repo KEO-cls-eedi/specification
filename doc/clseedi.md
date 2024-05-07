@@ -1,16 +1,25 @@
 # CLS.EEDI {#clseedi}
 
-This is the documentation of the CLS.EEDI protocol. CLS.EEDI allows backend systems to exchange grid management related
-data with local systems.
+This is the documentation of CLS.EEDI. It allows backend systems to exchange grid and energy management related data
+with local systems at the grid connection point (GCP). CLS.EEDI is a convenient implementation of the use cases
+standardized in VDE-AR 2829-6.
+
+The following use cases are currently supported:
+- Power limitation (LPC, LPP)
+- Metering (MGCP, MPC)
+
+CLS.EEDI requires an established TCP/IP based communication channel between backend systems and local systems.
+Country-specific security requirements must be taken into account when establishing a secure communication channel.
+It makes use of the MQTT protocol for the message transfer. CLS.EEDI uses JSON format to exchange messages.
 
 # Requirements
 
 - A communication channel between the backend system and the local device is established
 - Clocks are synchronized
 
-# Protocol
+# Introduction
 
-There are two roles in the protocol:
+There are two roles defined in CLS.EEDI:
 
 1. The backend
 2. The local device
@@ -176,13 +185,14 @@ For example, a consumption limit of 5000 W that shall be applied for 3600 second
 }
 ```
 
-Limits always have a positive value and a positive duration.
+Limits always have a positive value. When a duration is specified, it must also be positive.
 It is not allowed to send a consumption and a production limit in one message.
 
 The local device SHALL reply with a positive acknowledgement message when the limit can be applied, i.e. the
 controllable system has accepted it, otherwise it SHALL reply with a negative acknowledgement message with
-`"errorNumber": 3` (command execution error). This can happen, for example when the local device has no controllable
-system attached or when the controllable system rejects the limit.
+`"errorNumber": 3` (command execution error). This can happen, for example when the controllable system rejects the
+limit. When no controllable system is attached the local device SHALL reply with a negative acknowledgement message
+with `"errorNumber": 4` (command not supported).
 
 The `active` flag can be used to deactivate a previously set limit.
 
@@ -196,8 +206,9 @@ It is not allowed to send a consumption and a production failsafe in one message
 
 The local device SHALL reply with an positive acknowledgement message when the failsafe can be applied, i.e. the
 controllable system has accepted it, otherwise it SHALL reply with a negative acknowledgement message with
-`"errorNumber": 3` (command execution error). This can happen, when the local device has no controllable system attached
-or when the controllable system rejects the failsafe value.
+`"errorNumber": 3` (command execution error). This can happen, when the controllable system rejects the failsafe value.
+When no controllable system is attached the local device SHALL reply with a negative acknowledgement message
+with `"errorNumber": 4` (command not supported).
 
 In the EEBUS use cases LPC and LPP there is a heartbeat mechanism to monitor connectivity in the home area network and
 trigger the failsafe state. Because CLS.EEDI is used for wide area communication there is no heartbeat mechanism.
@@ -286,6 +297,7 @@ Take a look at the schema and an example:
 
 The data model for `state` messages consists of the following top-level properties:
 
+* `trust` - the currently trusted SHIP devices
 * `limits` - the current status of the limits for consumption and production
 * `failsafes` - the current failsafe values for consumption and production
 * `supportedEebusUseCases` - an array of EEBUS use cases the local device supports
@@ -324,6 +336,24 @@ Take a look at the schema and an example:
 * [schema](clseedi/de.keo-connectivity.clseedi.state.schema.json)
 * [example](clseedi/examples/de.keo-connectivity.clseedi.state.json)
 
+
+### Trust {#StateTrust}
+
+The `trust` property in the `state` reflects the currently trusted SHIP devices.
+However, as the only information that always is known is the SKI (either entered as SKI or read from the certificate),
+only the SKI is ever returned. This also applies if the trust was added via a certificate.
+If the backend establishes trust based on certificates, it must be able to read/calculate
+the SKI in order to perform a comparison with the stored trust data.
+
+```
+{
+    "trust": [
+        {
+            "ski": "607d3342a4eeb06f33094386644991cd4b80125b"
+        }
+    ]
+}
+```
 
 ### Limits {#StateLimits}
 
@@ -376,9 +406,20 @@ invalid values.
 The array `measurements` can contain multiple sets of measurement values. Each JSON object in the array represents one
 set of measurement values. Each set of measurement values consists of
 
-- a unique ID representing the set of measurement values
+- a unique ID representing the meter source
+- an ID type defining the type of ID being used (optional)
 - a type describing the source of the measurement values
 - the actual measurement values
+
+The element `idType` is optional. If it is set, it defines the type of the ID in the element `id`.
+Currently, the following ID types are defined.
+
+`idType`     | Definition
+------------ | -----------------------------------------------------------------------------------------------------------------------------------------
+DIN-43863-5  | German "Herstellerübergreifende Identifikationsnummer für Messeinrichtungen" as defined in `DIN-43863-5` without spaces (e.g. `1KEO1234567890`).
+
+If another value than the ones defined in this table are encountered or the `idType` is not set, the ID does not
+relate to any standard and should just be taken as a unique identifier for the meter source.
 
 Currently, the following measurement device types are defined.
 
@@ -463,6 +504,7 @@ with an empty parameter list, it indicates that the backend intends to receive a
 current moment.
 
 The following list shows the top-level properties from which to retrieve information:
+* `trust`
 * `limits`
 * `failsafes`
 * `supportedEebusUseCases`

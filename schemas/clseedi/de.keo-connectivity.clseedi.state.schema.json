@@ -60,6 +60,11 @@
                         "description": "A unique ID representing a set of measurement values.",
                         "maxLength": 256
                     },
+                    "idType": {
+                        "type": "string",
+                        "description": "Defines the type of the ID being used.",
+                        "maxLength": 64
+                    },
                     "source": {
                         "$ref": "file:definitions.schema.json#/definitions/source"
                     },
@@ -110,6 +115,17 @@
         },
         "notify": {
             "$ref": "file:definitions.schema.json#/definitions/notify"
+        },
+        "trust": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "ski": {
+                        "$ref": "file:definitions.schema.json#/definitions/ski"
+                    }
+                }
+            }
         }
     },
     "required": [
