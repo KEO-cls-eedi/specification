@@ -203,13 +203,11 @@
         "incentiveTableSlot": {
             "type": "object",
             "properties": {
-                "startTime": {
-                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                    "description": "Start time of the slot"
-                },
-                "endTime": {
-                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                    "description": "End time of the slot"
+                "duration": {
+                    "type": "integer",
+                    "description": "Duration of the slot [s] (uint32)",
+                    "minimum": 0,
+                    "maximum": 4294967295
                 },
                 "tiers": {
                     "type": "array",
@@ -253,7 +251,6 @@
                 }
             },
             "required": [
-                "startTime",
                 "tiers"
             ]
         },
@@ -281,8 +278,11 @@
                     "items": {
                         "$ref": "file:definitions.schema.json#/definitions/incentiveTableSlot"
                     },
-                    "minItems": 1,
-                    "uniqueItems": true
+                    "minItems": 1
+                },
+                "startTime": {
+                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
+                    "description": "Start time of the first slot"
                 }
             },
             "required": [
@@ -290,6 +290,43 @@
                 "tiers",
                 "slots"
             ]
+        },
+        "tariffsToutConstraint": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "maxTiersPerSlot": {
+                        "type": "integer",
+                        "description": "The maximum number of tiers per slot. Note that the specification calls this element 'maxTiersPerTariff'",
+                        "minimum": 0
+                    },
+                    "maxIncentivesPerTier": {
+                        "type": "integer",
+                        "description": "The maximum number of incentives per tier",
+                        "minimum": 0
+                    },
+                    "maxSlots": {
+                        "type": "integer",
+                        "description": "The maximum number of slots",
+                        "minimum": 0
+                    },
+                    "specializations": {
+                        "type": "array",
+                        "description": "The specializations, for which this constraint applies",
+                        "items": {
+                            "$ref": "file:definitions.schema.json#/definitions/tariffSpecializationEnum"
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": [
+                    "maxTiersPerSlot",
+                    "maxIncentivesPerTier",
+                    "maxSlots",
+                    "specializations"
+                ]
+            }
         },
         "certificate": {
             "type": "string",
@@ -322,18 +359,20 @@
                             "type": "object",
                             "description": "Active power forecast (PODF)",
                             "properties": {
+                                "startTime": {
+                                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
+                                    "description": "Time since the UNIX epoch (01-01-1970) in seconds (int64)"
+                                },
                                 "slots": {
                                     "type": "array",
                                     "items": {
                                         "type": "object",
                                         "properties": {
-                                            "startTime": {
-                                                "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                                                "description": "Time since the UNIX epoch (01-01-1970) in seconds (int64)"
-                                            },
                                             "duration": {
-                                                "$ref": "file:definitions.schema.json#/definitions/timestamp",
-                                                "description": "Duration for which the slot is valid [s] (int64)"
+                                                "type": "integer",
+                                                "description": "Duration of the slot [s] (uint32)",
+                                                "minimum": 0,
+                                                "maximum": 4294967295
                                             },
                                             "pMin": {
                                                 "type": "integer",
@@ -355,8 +394,6 @@
                                             }
                                         },
                                         "required": [
-                                            "startTime",
-                                            "duration",
                                             "pExp"
                                         ]
                                     }
@@ -394,7 +431,7 @@
                     "$ref": "file:definitions.schema.json#/definitions/timestamp"
                 },
                 "source": {
-                    "description": "The source of measurement data.",
+                    "description": "The source of measurement data",
                     "type": "array",
                     "items": {
                         "$ref": "file:definitions.schema.json#/definitions/source"
@@ -405,6 +442,109 @@
                 "interval",
                 "endTime",
                 "source"
+            ]
+        },
+        "envelopeLimit": {
+            "type": "object",
+            "properties": {
+                "startTime": {
+                    "$ref": "file:definitions.schema.json#/definitions/timestamp",
+                    "description": "Start time of the first slot: Time since the UNIX epoch (01-01-1970) in seconds (int64)"
+                },
+                "slots": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pMin": {
+                                "type": "integer",
+                                "description": "Minimum value [W] (int64)",
+                                "minimum": 0,
+                                "maximum": 9223372036854775807
+                            },
+                            "pMax": {
+                                "type": "integer",
+                                "description": "Maximum value [W] (int64)",
+                                "minimum": 0,
+                                "maximum": 9223372036854775807
+                            },
+                            "duration": {
+                                "description": "Duration for which the limit is valid [s] (uint32)",
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 4294967295
+                            }
+                        },
+                        "required": [
+                            "pMax"
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "startTime",
+                "slots"
+            ]
+        },
+        "envelopeFallback": {
+            "type": "object",
+            "properties": {
+                "slots": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pMax": {
+                                "type": "integer",
+                                "description": "Maximum value [W] (int64)",
+                                "minimum": 0,
+                                "maximum": 9223372036854775807
+                            },
+                            "duration": {
+                                "description": "Duration for which the limit is valid [s] (uint32)",
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 4294967295
+                            }
+                        },
+                        "required": [
+                            "pMax"
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "slots"
+            ]
+        },
+        "envelopeConstraint": {
+            "type": "object",
+            "properties": {
+                "minSlots": {
+                    "type": "integer"
+                },
+                "maxSlots": {
+                    "type": "integer"
+                },
+                "pValueMin": {
+                    "type": "integer"
+                },
+                "pValueMax": {
+                    "type": "integer"
+                },
+                "pValueStepSize": {
+                    "type": "integer"
+                },
+                "durationStepSize": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "maxSlots",
+                "pValueMin",
+                "pValueMax"
             ]
         }
     }

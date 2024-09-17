@@ -1,0 +1,37 @@
+{
+    "type": "de.keo-connectivity.clseedi.state",
+    "source": "some premise",
+    "id": "8756d3b2-8716-4dc0-9b63-b2e7edb5def9",
+    "specversion": "1.0",
+    "data": {
+        "timestamp": 1514862580,
+        "protocol": "0.5.0",
+        "constraints": {
+            "tariffs": {
+                "tout": [
+                    {
+                        "maxTiersPerSlot": 5,
+                        "maxIncentivesPerTier": 6,
+                        "maxSlots": 7,
+                        "specializations": [
+                            "consumptionPoe",
+                            "consumptionPoeTf",
+                            "consumptionTf"
+                        ]
+                    },
+                    {
+                        "maxTiersPerSlot": 10,
+                        "maxIncentivesPerTier": 11,
+                        "maxSlots": 12,
+                        "specializations": [
+                            "productionPoe",
+                            "productionPoeTf",
+                            "productionTf"
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}
+

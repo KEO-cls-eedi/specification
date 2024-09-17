@@ -1,0 +1,143 @@
+{
+    "type": "de.keo-connectivity.clseedi.state",
+    "source": "some premises",
+    "id": "071b6ddc-2f50-48dd-a134-431d6e8437b1",
+    "specversion": "1.0",
+    "data": {
+        "protocol": "0.5.0",
+        "constraints": {
+            "limits": {
+                "power": {
+                    "active": {
+                        "envelope": {
+                            "consumption": {
+                                "minSlots": 1,
+                                "maxSlots": 96,
+                                "pValueMin": 0,
+                                "pValueMax": 25000,
+                                "pValueStepSize": 1,
+                                "durationStepSize": 1
+                            },
+                            "production": {
+                                "minSlots": 1,
+                                "maxSlots": 96,
+                                "pValueMin": 0,
+                                "pValueMax": 5000,
+                                "pValueStepSize": 1,
+                                "durationStepSize": 1
+                            }
+                        }
+                    }
+                }
+            },
+            "fallbacks": {
+                "power": {
+                    "active": {
+                        "envelope": {
+                            "consumption": {
+                                "minSlots": 1,
+                                "maxSlots": 96,
+                                "pValueMin": 0,
+                                "pValueMax": 15000,
+                                "pValueStepSize": 1,
+                                "durationStepSize": 1
+                            },
+                            "production": {
+                                "minSlots": 1,
+                                "maxSlots": 96,
+                                "pValueMin": 0,
+                                "pValueMax": 2000,
+                                "pValueStepSize": 1,
+                                "durationStepSize": 1
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "fallbacks": {
+            "power": {
+                "active": {
+                    "envelope": {
+                        "consumption": {
+                            "slots": [
+                                {
+                                    "pMax": 8000,
+                                    "duration": 39600
+                                },
+                                {
+                                    "pMax": 5000
+                                },
+                                {
+                                    "duration": 7200,
+                                    "pMax": 8000
+                                }
+                            ]
+                        },
+                        "production": {
+                            "slots": [
+                                {
+                                    "pMax": 1000,
+                                    "duration": 39600
+                                },
+                                {
+                                    "pMax": 4000
+                                },
+                                {
+                                    "duration": 7200,
+                                    "pMax": 100
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "limits": {
+            "power": {
+                "active": {
+                    "envelope": {
+                        "consumption": {
+                            "startTime": 1719310350,
+                            "slots": [
+                                {
+                                    "pMin": 400,
+                                    "pMax": 4000,
+                                    "duration": 900
+                                },
+                                {
+                                    "pMax": 2000
+                                },
+                                {
+                                    "duration": 19800,
+                                    "pMin": 200,
+                                    "pMax": 1000
+                                }
+                            ]
+                        },
+                        "production": {
+                            "startTime": 1719310350,
+                            "slots": [
+                                {
+                                    "pMax": 5000,
+                                    "duration": 900
+                                },
+                                {
+                                    "pMax": 2000
+                                },
+                                {
+                                    "duration": 19800,
+                                    "pMax": 3000
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "supportedEebusUseCases": [
+            "poen"
+        ],
+        "timestamp": 1719310359
+    }
+}

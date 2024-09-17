@@ -1,0 +1,35 @@
+{
+    "type": "de.keo-connectivity.clseedi.control",
+    "source": "some backend",
+    "id": "4a104db0-1834-4b9d-8aac-9670b8b77516",
+    "specversion": "1.0",
+    "data": {
+        "protocol": "0.5.0",
+        "limits": {
+            "power": {
+                "active": {
+                    "envelope": {
+                        "consumption": {
+                            "startTime": 1718791994,
+                            "slots": [
+                                {
+                                    "pMin": 400,
+                                    "pMax": 4000,
+                                    "duration": 900
+                                },
+                                {
+                                    "pMax": 2000
+                                },
+                                {
+                                    "duration": 19800,
+                                    "pMin": 200,
+                                    "pMax": 1000
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

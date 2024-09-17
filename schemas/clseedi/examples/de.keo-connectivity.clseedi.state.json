@@ -4,7 +4,7 @@
     "id": "5cb3fe0f-4494-4e84-9487-c61edd8b7026",
     "specversion": "1.0",
     "data": {
-        "protocol": "0.4.0",
+        "protocol": "0.5.0",
         "limits": {
             "power": {
                 "active": {
@@ -182,10 +182,31 @@
                 }
             }
         },
-        "configuration": {
-            "maxTiersPerSlot": 5,
-            "maxIncentivesPerTier": 6,
-            "maxSlots": 7
+        "constraints": {
+            "tariffs": {
+                "tout": [
+                    {
+                        "maxTiersPerSlot": 5,
+                        "maxIncentivesPerTier": 6,
+                        "maxSlots": 7,
+                        "specializations": [
+                            "consumptionPoe",
+                            "consumptionPoeTf",
+                            "consumptionTf"
+                        ]
+                    },
+                    {
+                        "maxTiersPerSlot": 10,
+                        "maxIncentivesPerTier": 11,
+                        "maxSlots": 12,
+                        "specializations": [
+                            "productionPoe",
+                            "productionPoeTf",
+                            "productionTf"
+                        ]
+                    }
+                ]
+            }
         },
         "supportedEebusUseCases": [
             "lpc",

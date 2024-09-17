@@ -4,7 +4,7 @@
     "id": "8756d3b2-8716-4dc0-9b63-b2e7edb5def9",
     "specversion": "1.0",
     "data": {
-        "protocol": "0.4.0",
+        "protocol": "0.5.0",
         "tariffs": {
             "tout": {
                 "toutSpecialization": "consumptionPoe",
@@ -42,10 +42,10 @@
                         ]
                     }
                 ],
+                "startTime": 514862580,
                 "slots": [
                     {
-                        "startTime": 514862580,
-                        "endTime": 514862880,
+                        "duration": 3600,
                         "tiers": [
                             {
                                 "tierId": 0,
@@ -96,8 +96,6 @@
                         ]
                     },
                     {
-                        "startTime": 514862880,
-                        "endTime": 514863180,
                         "tiers": [
                             {
                                 "tierId": 0,

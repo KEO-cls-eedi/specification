@@ -22,6 +22,17 @@
                                 },
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/limit"
+                                },
+                                "envelope": {
+                                    "type": "object",
+                                    "properties": {
+                                        "consumption": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeLimit"
+                                        },
+                                        "production": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeLimit"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -43,6 +54,32 @@
                                 },
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "fallbacks": {
+            "type": "object",
+            "properties": {
+                "power": {
+                    "type": "object",
+                    "properties": {
+                        "active": {
+                            "type": "object",
+                            "properties": {
+                                "envelope": {
+                                    "type": "object",
+                                    "properties": {
+                                        "consumption": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeFallback"
+                                        },
+                                        "production": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeFallback"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -105,30 +142,70 @@
                 ]
             }
         },
-        "configuration": {
+        "constraints": {
             "type": "object",
             "properties": {
-                "maxTiersPerSlot": {
-                    "type": "integer",
-                    "description": "The maximum number of tiers per slot. Note that the specification calls this element 'maxTiersPerTariff'",
-                    "minimum": 0
+                "limits": {
+                    "type": "object",
+                    "properties": {
+                        "power": {
+                            "type": "object",
+                            "properties": {
+                                "active": {
+                                    "type": "object",
+                                    "properties": {
+                                        "envelope": {
+                                            "type": "object",
+                                            "properties": {
+                                                "consumption": {
+                                                    "$ref": "file:definitions.schema.json#/definitions/envelopeConstraint"
+                                                },
+                                                "production": {
+                                                    "$ref": "file:definitions.schema.json#/definitions/envelopeConstraint"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
-                "maxIncentivesPerTier": {
-                    "type": "integer",
-                    "description": "The maximum number of incentives per tier",
-                    "minimum": 0
+                "fallbacks": {
+                    "type": "object",
+                    "properties": {
+                        "power": {
+                            "type": "object",
+                            "properties": {
+                                "active": {
+                                    "type": "object",
+                                    "properties": {
+                                        "envelope": {
+                                            "type": "object",
+                                            "properties": {
+                                                "consumption": {
+                                                    "$ref": "file:definitions.schema.json#/definitions/envelopeConstraint"
+                                                },
+                                                "production": {
+                                                    "$ref": "file:definitions.schema.json#/definitions/envelopeConstraint"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
-                "maxSlots": {
-                    "type": "integer",
-                    "description": "The maximum number of slots",
-                    "minimum": 0
+                "tariffs": {
+                    "type": "object",
+                    "properties": {
+                        "tout": {
+                            "$ref": "file:definitions.schema.json#/definitions/tariffsToutConstraint"
+                        }
+                    }
                 }
-            },
-            "required": [
-                "maxTiersPerSlot",
-                "maxIncentivesPerTier",
-                "maxSlots"
-            ]
+            }
         },
         "supportedEebusUseCases": {
             "type": "array",

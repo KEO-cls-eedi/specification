@@ -1,8 +1,10 @@
 # KEO CLS.EEDI Experimental
 
-This is the documentation of the KEO CLS.EEDI protocol. KEO CLS.EEDI allows energy grid related backend systems (e.g. aEMT) to exchange energy management related data with local systems (e.g. SMGWs).
+This is the documentation of CLS.EEDI. It allows backend systems to exchange grid and energy management related data with
+local systems at the grid connection point (GCP). CLS.EEDI is a convenient implementation of the use cases standardized
+in VDE-AR 2829-6.
 
-Note that this is an experimental version of the KEO CLS.EEDI specification. All statements made in this document, in
+Note that this is an experimental version of the CLS.EEDI specification. All statements made in this document, in
 the schema files, and in the examples can change at any time. Follow
 [this link](https://github.com/KEO-cls-eedi/specification) to find the most recent stable version.
 

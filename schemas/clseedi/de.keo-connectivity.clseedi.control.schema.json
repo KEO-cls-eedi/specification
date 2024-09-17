@@ -22,6 +22,17 @@
                                 },
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/limit"
+                                },
+                                "envelope": {
+                                    "type": "object",
+                                    "properties": {
+                                        "consumption": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeLimit"
+                                        },
+                                        "production": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeLimit"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -43,6 +54,32 @@
                                 },
                                 "production": {
                                     "$ref": "file:definitions.schema.json#/definitions/failsafe"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "fallbacks": {
+            "type": "object",
+            "properties": {
+                "power": {
+                    "type": "object",
+                    "properties": {
+                        "active": {
+                            "type": "object",
+                            "properties": {
+                                "envelope": {
+                                    "type": "object",
+                                    "properties": {
+                                        "consumption": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeFallback"
+                                        },
+                                        "production": {
+                                            "$ref": "file:definitions.schema.json#/definitions/envelopeFallback"
+                                        }
+                                    }
                                 }
                             }
                         }

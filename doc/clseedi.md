@@ -1,7 +1,18 @@
 # CLS.EEDI {#clseedi}
 
-This is the documentation of the CLS.EEDI protocol. CLS.EEDI allows backend systems to exchange grid management related
-data with local systems.
+This is the documentation of CLS.EEDI. It allows backend systems to exchange grid and energy management related data
+with local systems at the grid connection point (GCP). CLS.EEDI is a convenient implementation of the use cases
+standardized in VDE-AR 2829-6.
+
+The following use cases are currently supported:
+- Power limitation (LPC, LPP, POEN)
+- Metering (MGCP, MPC)
+- Tariffs (TOUT)
+- Flexibility Provision (PODF)
+
+CLS.EEDI requires an established TCP/IP based communication channel between backend systems and local systems.
+Country-specific security requirements must be taken into account when establishing a secure communication channel.
+It makes use of the MQTT protocol for the message transfer. CLS.EEDI uses JSON format to exchange messages.
 
 # Requirements
 
@@ -10,9 +21,9 @@ data with local systems.
 - Clocks are synchronized
   <span id="REQ-2"><a href="#REQ-2">[REQ-2]</a></span>
 
-# Protocol
+# Introduction
 
-There are two roles in the protocol:
+There are two roles defined in CLS.EEDI:
 
 1. The backend
 2. The local device
@@ -134,6 +145,7 @@ examples to get started:
 * examples
   * [Setting a limit](clseedi/examples/de.keo-connectivity.clseedi.control_limits.json)
   * [Setting a failsafe](clseedi/examples/de.keo-connectivity.clseedi.control_failsafes.json)
+  * [Setting a limit curve](clseedi/examples/de.keo-connectivity.clseedi.control_limits_envelope.json)
   * [Setting a tariff](clseedi/examples/de.keo-connectivity.clseedi.control.tariffs.json)
   * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
   * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
@@ -141,8 +153,9 @@ examples to get started:
 
 The control payload can consist of the following top-level properties:
 
-* `limits` - a power consumption limit (LPC) or a power production limit (LPP)
+* `limits` - a power consumption limit (LPC), a power production limit (LPP) or power consumption/production curve (POEN)
 * `failsafes` - a failsafe power consumption limit (LPC) or a failsafe power production limit (LPP)
+* `fallbacks` - a fallback power curve (POEN)
 * `tariffs` - time of use tariff information (TOUT)
 * `trust` - certificates and/or SKIs to be trusted for the SHIP connections the local device maintains
 * `notify` - configure notifications for sending measurement data
@@ -163,13 +176,21 @@ When receiving a `control` message, that is not a reply to a `read`, the local d
 <span id="REQ-12"><a href="#REQ-12">[REQ-12]</a></span>.
 A positive acknowledgement message means that the element contained in the message was valid and has been processed.
 
+If an acknowledgment message for a `control` message is still pending and a subsequent `control` message for the same
+top-level property is received, the backend should reply with a negative acknowledgement set to `"errorNumber": 3`
+(command execution error).
+
 The different top-level properties are explained in more detail in the following sections.
 
 ### Limits {#ControlLimits}
 
-Power limits are used to regulate the power consumption or production or both of local premises in terms of the EEBUS
-use cases LPC and LPP.
+Power limits are used to regulate the power consumption or production or both of local premises in terms of the following
+EEBUS use cases:
+* LPC - an ad hoc limitation of consumption power
+* LPP - an ad hoc limitation of production power
+* POEN - a limitation curve(s) for scheduled limitation of consumption and production power
 
+#### Ad-hoc limits (LPC/LPP) {#AdhocLimits}
 A power limit consists of these properties:
 
 * `value` - the limit for active power in W as an integer
@@ -194,7 +215,7 @@ For example, a consumption limit of 5000 W that shall be applied for 3600 second
 }
 ```
 
-Limits always have a positive value and a positive duration
+Limits always have a positive value. When a duration is specified, it must also be positive
 <span id="REQ-13"><a href="#REQ-13">[REQ-13]</a></span>.
 It is not allowed to send a consumption and a production limit in one message.
 <span id="REQ-14"><a href="#REQ-14">[REQ-14]</a></span>
@@ -204,10 +225,22 @@ controllable system has accepted it
 <span id="REQ-15"><a href="#REQ-15">[REQ-15]</a></span>,
 otherwise it SHALL reply with a negative acknowledgement message with `"errorNumber": 3` (command execution error)
 <span id="REQ-16"><a href="#REQ-16">[REQ-16]</a></span>.
-This can happen, for example when the local device has no controllable system attached or when the controllable system
-rejects the limit.
+This can happen, for example when the controllable system rejects the limit. When no controllable system is attached
+the local device SHALL reply with a negative acknowledgement message with `"errorNumber": 4` (command not supported).
 
 The `active` flag can be used to deactivate a previously set limit.
+
+#### Limit curves (POEN) {#LimitCurves}
+A power limit curve consists of these properties:
+* `startTime` - the start time (in seconds since epoch) for the first slot
+* `slots` - the slots of the curve
+
+The `slots` consists of these properties:
+* `pMin` - the minimal required power consumption/production (optional, if omitted, it is zero)
+* `pMax` - the maximal allowed power consumption/production
+* `duration` - the duration of the slot in seconds (mandatory for the very first slot, if omitted, the last set duration will be used for the slot)
+
+All limit curves must satisfy the corresponding constraints (see section [constraints](@ref StateEnvelopeConstraints)).
 
 ### Failsafes {#ControlFailsafes}
 
@@ -223,24 +256,65 @@ controllable system has accepted it
 <span id="REQ-18"><a href="#REQ-18">[REQ-18]</a></span>,
 otherwise it SHALL reply with a negative acknowledgement message with `"errorNumber": 3` (command execution error)
 <span id="REQ-19"><a href="#REQ-19">[REQ-19]</a></span>.
-This can happen, when the local device has no controllable system attached or when the controllable system rejects the
-failsafe value.
+This can happen, when the controllable system rejects the failsafe value. When no controllable system is attached the
+local device SHALL reply with a negative acknowledgement message with `"errorNumber": 4` (command not supported).
 
 In the EEBUS use cases LPC and LPP there is a heartbeat mechanism to monitor connectivity in the home area network and
 trigger the failsafe state. Because CLS.EEDI is used for wide area communication there is no heartbeat mechanism.
 Consequently, the failsafe state is only related to EEBUS communication in the home area network and not related to CLS
 connectivity between the local device and the backend. CLS.EEDI supports setting the failsafe limits only.
 
+### Fallbacks {#ControlFallbacks}
+
+Fallback curves are used in the POEN use case. They exist for the maximum consumption and the maximum production values.
+A curve SHALL cover the whole day with the start time defined as 00:00:00Z (i.e. 12AM UTC). Gaps between slots are not allowed.
+
+All fallback curves must satisfy the corresponding constraints (see section [constraints](@ref StateEnvelopeConstraints)).
+
+```
+{
+  "fallbacks": {
+      "power": {
+          "active": {
+              "envelope": {
+                  "consumption": {
+                      "slots": [
+                          {
+                              "pMax": 8000,
+                              "duration": 39600
+                          },
+                          {
+                              "pMax": 5000
+                          },
+                          {
+                              "duration": 7200,
+                              "pMax": 8000
+                          }
+                      ]
+                  }
+              }
+          }
+      }
+  }
+}
+```
+
+In this example, the consumption curve is defined with three slots:
+* start time 00:00:00Z, duration of 39600s (11 hours), so the end time is 10:59:59Z, pMax: 8000W
+* start time 11:00:00Z, duration is not set (therefore previous duration is used), so the end time is 21:59:59Z, pMax: 5000W
+* start time 22:00:00Z, duration of 7200s (2 hours), so the end time is 23:59:59Z, pMax: 8000W
+
 ### Tariffs {#ControlTariffs}
 
 Tariffs allow the backend to incentivize load shifting in terms of the EEBUS use case TOUT.
 
-A tariff always consists of three properties:
+A tariff always consists of the following properties:
 * `toutSpecialization` - defines which costs the tariff describes
 * `tiers` - the incentive tiers
 * `slots` - the slots of the incentive table
+* `startTime` - the start time of the first slot
 
-All tariffs must satisfy the constraints stated in the `configuration` (see section "Configuration").
+All tariffs must satisfy the corresponding constraints (see section [constraints](@ref StateTariffsConstraints)).
 
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.control.tariffs.json) demonstrating how to set a tariff.
 
@@ -287,15 +361,33 @@ element SHALL be ignored
 
 #### Slots
 
-The property `slots` always consists of three properties:
-* `startTime` - Start time of the slot
-* `endTime` - End time of the slot
+The property `slots` is an array of:
+* `duration` - duration of the slot
 * `tiers` - is an array of
  * `tierId` - ID of the tier
  * `lowerBoundaryValue` - lower boundary of the tier [W] as scaled number
  * `incentives` - is an array of
   * `incentiveId` - ID of the incentive
   * `value` - the value as scaled number
+The first slot in the `slots` array SHALL contain the `duration` element <span id="REQ-XY"><a href="#REQ-XY">[REQ-XY]</a></span>.
+For all subsequent slots the `duration` element MAY be omitted. If the `duration` element is omitted,
+the last known `duration` value SHALL be applied. Every new `duration` value overrides the last known value
+and SHALL be applied for the current slot and all subsequent slots until it is overridden again.
+
+#### Incentive type vs specialization
+
+Not every `incentive` makes sense and is allowed for every `toutSpecialization`. For the rules please refer to the following
+compatibility table, where allowed combinations are marked with 'X'.
+
+| `toutSpecialization` \ `incentive` | `absoluteCost` | `renewableEnergyPercentage` | `co2Emission`   |
+| ---------------------------------- | :------------: | :-------------------------: | :-------------: |
+| `consumptionPoe`                   |       X        |              X              |        X        |
+| `consumptionPoeTf`                 |       X        |              X              |        X        |
+| `consumptionTf`                    |       X        |                             |                 |
+| `productionPoe`                    |       X        |                             |                 |
+| `productionPoeTf`                  |       X        |                             |                 |
+| `productionTf`                     |       X        |                             |                 |
+
 
 ### Trust
 
@@ -323,7 +415,7 @@ SHIP trust setup usually happens just once, for example during the initial insta
 ### Notify
 
 Using this property, the backend can configure notifications of measurement values to be sent by the local device. To
-configure these notifications, the following properties need to be specified:
+configure these notifications, all following properties SHALL be set:
 
 * `interval` - The seconds between notifications
 * `endTime` - The timestamp indicating the end of the notification period
@@ -344,6 +436,9 @@ sent
 The notifications SHALL be sent as a `state` message with measurement data
 <span id="REQ-24"><a href="#REQ-24">[REQ-24]</a></span>.
 
+To disable the notifications a control message with an empty notify element SHALL be sent
+<span id="REQ-25"><a href="#REQ-25">[REQ-25]</a></span>.
+
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.control.notify.json) demonstrating how to configure
 notifications.
 
@@ -351,7 +446,7 @@ notifications.
 
 An acknowledgement message SHALL be sent as a reply by the local device to communicate whether the corresponding request
 was valid and could be executed or not
-<span id="REQ-25"><a href="#REQ-25">[REQ-25]</a></span>.
+<span id="REQ-26"><a href="#REQ-26">[REQ-26]</a></span>.
 
 The following message types can cause an acknowledgement message:
 
@@ -359,10 +454,10 @@ The following message types can cause an acknowledgement message:
 - `de.keo-connectivity.clseedi.control`
 
 If the `control` message is a reply to a `read` (i.e. has a `relation` filed) it SHALL NOT be acknowledged
-<span id="REQ-26"><a href="#REQ-26">[REQ-26]</a></span>.
+<span id="REQ-27"><a href="#REQ-27">[REQ-27]</a></span>.
 
 Other message types SHALL NOT cause acknowledgement messages
-<span id="REQ-27"><a href="#REQ-27">[REQ-27]</a></span>.
+<span id="REQ-28"><a href="#REQ-28">[REQ-28]</a></span>.
 
 The acknowledgement is represented by the `errorNumber` element in the acknowledgement message. A value greater than 0 indicates an error.
 
@@ -387,8 +482,9 @@ The data model for `state` messages consists of the following top-level properti
 
 * `limits` - the current status of the limits for consumption and production
 * `failsafes` - the current failsafe values for consumption and production
+* `fallbacks` - the fallback values for consumption and production curves
 * `tariffs` - energy prices over time
-* `configuration` - the configuration of the local system
+* `constraints` - the constraints of the local system
 * `supportedEebusUseCases` - an array of EEBUS use cases the local device supports
 * `measurements` - measurement values from potentially different sources
 * `demands` - power demand forecasts from the local device
@@ -400,32 +496,32 @@ section for details). In the case of a `read` message with empty `parameters`, a
 the reply are expected to be unavailable or unset on the local device. Consequently, a `state` message caused by a
 `read` message with empty `parameters` always represents the complete state of the local device and overwrites all
 previous `state` messages received from the local device
-<span id="REQ-28"><a href="#REQ-28">[REQ-28]</a></span>.
+<span id="REQ-29"><a href="#REQ-29">[REQ-29]</a></span>.
 
 The backend can configure which parts of the local device's state it wants to receive, using the `parameters` property.
 
 When receiving a `read` message with non-empty `parameters` ("selective read") the local device SHALL reply with a
 `state` message
-<span id="REQ-29"><a href="#REQ-29">[REQ-29]</a></span>.
+<span id="REQ-30"><a href="#REQ-30">[REQ-30]</a></span>.
 All top-level properties that are listed in `parameters` for which the local device does not have data, SHALL NOT be
 present in the `state` message
-<span id="REQ-30"><a href="#REQ-30">[REQ-30]</a></span>.
+<span id="REQ-31"><a href="#REQ-31">[REQ-31]</a></span>.
 All top-level properties that are listed in `parameters` for which the local device does have data, SHALL be present in
 the `state` message
-<span id="REQ-31"><a href="#REQ-31">[REQ-31]</a></span>.
-All top-level properties that are not listed in the `parameters` SHALL NOT be present in the `state` message.
 <span id="REQ-32"><a href="#REQ-32">[REQ-32]</a></span>.
+All top-level properties that are not listed in the `parameters` SHALL NOT be present in the `state` message.
+<span id="REQ-33"><a href="#REQ-33">[REQ-33]</a></span>.
 
 When receiving a `state` message that was caused by a `read` message with non-empty `parameters`,  all top-level
 properties that are present in the `state` message overwrite all previous state of that top-level property
-<span id="REQ-33"><a href="#REQ-33">[REQ-33]</a></span>.
+<span id="REQ-34"><a href="#REQ-34">[REQ-34]</a></span>.
 All top-level properties that were listed in `parameters` that are not present in the `state` message are expected to
 not be available anymore at the local device.
-<span id="REQ-34"><a href="#REQ-34">[REQ-34]</a></span>.
+<span id="REQ-35"><a href="#REQ-35">[REQ-35]</a></span>.
 
 Additionally, a local device can send unsolicited updates of its state. When notifying the state, not all top-level
 properties have to be set. This allows the local device to notify only the properties that have changed. When any of the
-`limits`, `failsafes`, `tariffs`, `configuration`, `supportedEebusUseCases`, `demands` or `notify` top-level property
+`limits`, `failsafes`, `tariffs`, `constraints`, `supportedEebusUseCases`, `demands` or `notify` top-level property
 are set, they SHALL reflect the complete current state of those top-level properties
 <span id="REQ-36"><a href="#REQ-36">[REQ-36]</a></span>.
 When the `measurements` top-level property is set, every array element SHALL reflect the complete current state of the
@@ -440,7 +536,10 @@ Take a look at the schema and an example:
 
 ### Limits {#StateLimits}
 
-The `limits` property in the `state` reflects the current power limits in terms of the EEBUS use cases LPC and LPP.
+The `limits` property in the `state` reflects the current power limits in terms of the EEBUS use cases LPC, LPP for ad-hoc limitation
+and in terms of EEBUS use case POEN for limitation curves.
+
+#### Ad-hoc limits (LPC/LPP)
 The `active` flag indicates if the power limit has been accepted and is active.
 The `duration` indicates the remaining active time in seconds of the power limit
 <span id="REQ-38"><a href="#REQ-38">[REQ-38]</a></span>.
@@ -454,6 +553,39 @@ The `duration` indicates the remaining active time in seconds of the power limit
                     "value": 2000,
                     "active": true,
                     "duration": 3600
+                }
+            }
+        }
+    }
+}
+```
+
+#### Limit curves (POEN)
+When the use case POEN is available, the existing limit curve(s) can be found in the `envelope` element.
+```
+{
+    "limits": {
+        "power": {
+            "active": {
+                "envelope": {
+                    "consumption": {
+                        "startTime": 1719310350,
+                        "slots": [
+                            {
+                                "pMin": 400,
+                                "pMax": 4000,
+                                "duration": 900
+                            },
+                            {
+                                "pMax": 2000
+                            },
+                            {
+                                "duration": 19800,
+                                "pMin": 200,
+                                "pMax": 1000
+                            }
+                        ]
+                    }
                 }
             }
         }
@@ -479,6 +611,42 @@ LPP.
 }
 ```
 
+### Fallbacks {#StateFallbacks}
+
+The `fallbacks` property in the `state` reflects the current values for the fallback curves in terms of the EEBUS use case POEN.
+
+```
+{
+
+    "fallbacks": {
+        "power": {
+            "active": {
+                "envelope": {
+                    "consumption": {
+                        "slots": [
+                            {
+                                "pMax": 8000,
+                                "duration": 39600
+                            },
+                            {
+                                "pMax": 5000
+                            },
+                            {
+                                "duration": 7200,
+                                "pMax": 8000
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+The curve for production follows the same rules.
+
+
 ### Tariffs {#StateTariffs}
 
 The `tariffs` property shows the energy prices over time in terms of the EEBUS use case TOUT that are available to the
@@ -490,21 +658,36 @@ communicates the tariff it has received before.
 Please note that the data model for tariff information is under active development. Consider it to be highly
 preliminary.
 
-### Configuration
+### Constraints {#StateConstraints}
 
-Information on the configuration of the local device. Currently only used to describe the maximum array sizes for the
-incentive tables in terms of the EEBUS use case TOUT.
+The local device may define constraints, which must be considered in the control messages, sent by the backend.
+Constraints may not be changed by the backend. The local device SHALL NOT set constraints if relevant control is not supported and SHALL NOT support an use case when mandatory constraints are missing.
+For example if tariffs are not supported by the local device, the local device SHALL NOT set tariff constraints in the state message <span id="REQ-39"><a href="#REQ-39">[REQ-39]</a></span>.
+When a control message violates a constraint, the message SHALL be rejected with a negative acknowledgement set to "errorNumber": 2 (protocol error).
 
-```
-{
-    "maxTiersPerSlot": 5,
-    "maxIncentivesPerTier": 6,
-    "maxSlots": 7
-}
-```
+#### Tariffs {#StateTariffsConstraints}
 
-A local device that does not support tariff data shall set all three values to zero
-<span id="REQ-39"><a href="#REQ-39">[REQ-39]</a></span>.
+Information on the tariffs constraints of the local device. Currently only used to describe the maximum array sizes for
+the incentive tables and the specializations used in terms of the EEBUS use case TOUT.
+
+This [example](clseedi/examples/de.keo-connectivity.clseedi.state.tariffsConstraints.json) demonstrates how the local
+device communicates the tariff constraints.
+
+#### Envelope {#StateEnvelopeConstraints}
+
+Possible constraints for use case POEN:
+
+Constraint       | Semantics of Value
+---------------- | ---------------------------------------------------------
+minSlots         | Minimal required slots
+maxSlots         | Maximal allowed slots (mandatory)
+pValueMin        | Minimal allowed power value (mandatory)
+pValueMax        | Maximal allowed power value (mandatory)
+pValueStepSize   | Step size of the power value
+durationStepSize | Step size of the duration
+
+Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.state_envelope.json) showing constraints for all curves.
+
 
 ### Measurements {#StateMeasurements}
 
@@ -567,6 +750,20 @@ of the measurement data.
 Using the `demands` property the local device can communicate forecasts for predicted power consumption and production
 in terms of the EEBUS use case PODF to the backend.
 
+A power demand forecast always consists of the following properties:
+* `slots` - the array of slots with demand forecast
+* `startTime` - the start time of the first slot
+
+The property `slots` is an array of:
+* `duration` - duration of the slot
+* `pMin` - is minimal expected power consumption for the given time slot
+* `pMax` - is maximal expected power consumption for the given time slot
+* `pExp` - is the expected power consumption for the given time slot
+The first slot in the `slots` array SHALL contain the `duration` element <span id="REQ-XY"><a href="#REQ-XY">[REQ-XY]</a></span>.
+For all subsequent slots the `duration` element MAY be omitted. If the `duration` element is omitted,
+the last known `duration` value SHALL be applied. Every new `duration` value overrides the last known value
+and SHALL be applied for the current slot and all subsequent slots until it is overridden again.
+
 This [example](clseedi/examples/de.keo-connectivity.clseedi.state.demands.json) demonstrates how a local device can
 communicate its power demand forecast.
 
@@ -593,6 +790,7 @@ The following table defines which functionality is represented how in the `suppo
 `mgcp`                   | Monitoring of Grid Connection Point - measurement data maps to this use case
 `mpc`                    | Monitoring of Power Consumption - measurement data maps to this use case
 `podf`                   | Power Demand Forecast - demands active data maps to this use case
+`poen`                   | Power Envelope - envelope data in limits and fallbacks map to this use case
 
 If other values than the ones defined in this table are encountered, the array entry SHALL be ignored
 <span id="REQ-47"><a href="#REQ-47">[REQ-47]</a></span>.
@@ -601,14 +799,16 @@ The following top-level properties of `control` messages can be expected to be h
 * `lpc` - [limits](@ref ControlLimits) and [failsafes](@ref ControlFailsafes)
 * `lpp` - [limits](@ref ControlLimits) and [failsafes](@ref ControlFailsafes)
 * `tout` - [tariffs](@ref ControlTariffs)
+* `poen` - [limits](@ref LimitCurves) and [fallbacks](@ref ControlFallbacks)
 
 The following top-level properties of `state` messages can be expected to be set by the local network when the use case is present:
 * `lpc` - [limits](@ref StateLimits) and [failsafes](@ref StateFailsafes)
 * `lpp` - [limits](@ref StateLimits) and [failsafes](@ref StateFailsafes)
-* `tout` - [tariffs](@ref StateTariffs)
+* `tout` - [tariffs](@ref StateTariffs), [constraints](@ref StateTariffsConstraints)
 * `mgcp` - [measurements](@ref StateMeasurements)
 * `podf` - [demands](@ref StateDemands)
 * `mpc` - [measurements](@ref StateMeasurements)
+* `poen` - [constraints](@ref StateEnvelopeConstraints), [limits](@ref LimitCurves) and [fallbacks](@ref StateFallbacks)
 
 ### Notify
 
@@ -633,8 +833,9 @@ current moment.
 The following list shows the top-level properties from which to retrieve information:
 * `limits`
 * `failsafes`
+* `fallbacks`
 * `tariffs`
-* `configuration`
+* `constraints`
 * `supportedEebusUseCases`
 * `measurements`
 * `demands`
