@@ -109,6 +109,34 @@
                 }
             }
         },
+        "schedules": {
+            "type": "array",
+            "items": {
+                "properties": {
+                    "limit": {
+                        "type": "object",
+                        "properties": {
+                            "power": {
+                                "type": "object",
+                                "properties": {
+                                    "active": {
+                                        "type": "object",
+                                        "properties": {
+                                            "consumption": {
+                                                "$ref": "file:definitions.schema.json#/definitions/schedulesLimitPowerActive"
+                                            },
+                                            "production": {
+                                                "$ref": "file:definitions.schema.json#/definitions/schedulesLimitPowerActive"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "notify": {
             "$ref": "file:definitions.schema.json#/definitions/notify"
         }

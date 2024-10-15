@@ -4,7 +4,7 @@
     "id": "8756d3b2-8716-4dc0-9b63-b2e7edb5def9",
     "specversion": "1.0",
     "data": {
-        "protocol": "0.5.0",
+        "protocol": "0.6.0",
         "notify": {
             "interval": 30,
             "endTime": 1686127362,

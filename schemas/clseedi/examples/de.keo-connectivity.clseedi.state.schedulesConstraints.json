@@ -1,0 +1,16 @@
+{
+    "type": "de.keo-connectivity.clseedi.state",
+    "source": "some premise",
+    "id": "72d1ceba-5e9f-4aa9-8a43-9592b8e68ce4",
+    "specversion": "1.0",
+    "data": {
+        "timestamp": 1728547810,
+        "protocol": "0.6.0",
+        "constraints": {
+            "schedules": {
+                "maxSchedules": 10,
+                "timeResolution": 60
+            }
+        }
+    }
+}

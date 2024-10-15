@@ -5,7 +5,7 @@
     "specversion": "1.0",
     "data": {
         "timestamp": 1514862580,
-        "protocol": "0.5.0",
+        "protocol": "0.6.0",
         "constraints": {
             "tariffs": {
                 "tout": [

@@ -150,6 +150,7 @@ examples to get started:
   * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
   * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
   * [Configure notifications](clseedi/examples/de.keo-connectivity.clseedi.control.notify.json)
+  * [Configure schedules](clseedi/examples/de.keo-connectivity.clseedi.control.schedules.json)
 
 The control payload can consist of the following top-level properties:
 
@@ -159,13 +160,14 @@ The control payload can consist of the following top-level properties:
 * `tariffs` - time of use tariff information (TOUT)
 * `trust` - certificates and/or SKIs to be trusted for the SHIP connections the local device maintains
 * `notify` - configure notifications for sending measurement data
+* `schedules` - configure control commands to be executed by the local device according to a schedule
 
 In case that the control message is a reply to a `read` message (i.e. has a `relation`), all top-level properties can be
 set, otherwise only a single top-level element is allowed
 <span id="REQ-9"><a href="#REQ-9">[REQ-9]</a></span>.
 
 When receiving a `control` message
-- the top-level properties `tariffs`, `trust` and `notify` overwrite the previous state of those properties entirely
+- the top-level properties `tariffs`, `trust`, `notify` and `schedules` overwrite the previous state of those properties entirely
   <span id="REQ-10"><a href="#REQ-10">[REQ-10]</a></span>
 - the elements `limits.power.active.consumption`, `limits.power.active.production`, `failsafes.power.active.consumption`
   and `failsafes.power.active.production` replace the previous state of that element entirely
@@ -188,7 +190,7 @@ Power limits are used to regulate the power consumption or production or both of
 EEBUS use cases:
 * LPC - an ad hoc limitation of consumption power
 * LPP - an ad hoc limitation of production power
-* POEN - a limitation curve(s) for scheduled limitation of consumption and production power
+* POEN - a limitation curve(s) for limitation of consumption and production power over time
 
 #### Ad-hoc limits (LPC/LPP) {#AdhocLimits}
 A power limit consists of these properties:
@@ -229,6 +231,11 @@ This can happen, for example when the controllable system rejects the limit. Whe
 the local device SHALL reply with a negative acknowledgement message with `"errorNumber": 4` (command not supported).
 
 The `active` flag can be used to deactivate a previously set limit.
+
+If a scheduled limit is currently active, the backend SHALL NOT send an ad-hoc limit that is deactivated or allows higher consumption or production.
+The local device SHALL reply with a negative acknowledgement message with `"errorNumber": 2` (protocol error) to an ad-hoc limit that is deactivated
+or allows higher consumption or production than the currently active scheduled limit.
+
 
 #### Limit curves (POEN) {#LimitCurves}
 A power limit curve consists of these properties:
@@ -442,6 +449,37 @@ To disable the notifications a control message with an empty notify element SHAL
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.control.notify.json) demonstrating how to configure
 notifications.
 
+### Schedules {#schedules}
+
+The schedule functionality enables the backend to configure limits, which must be applied by the local device daily at the
+specified time and for the specified duration. The following fields SHALL be set:
+
+* `value` - The value of the limit in Watts
+* `time` - The time of the day, when the limit must be applied by the local device, specified as a string in the ISO format in UTC
+* `duration` - The duration in seconds for which the limit must be applied with a maximum of 24 hours
+
+All schedules must satisfy the corresponding constraints (see section [constraints](@ref StateSchedulesConstraints)).
+
+Upon receiving `schedules`, the local device SHALL respond if it is able to process them. If the local device does not
+support `schedules`, it SHALL reply with `"errorNumber": 4` (command not supported). If the local device cannot process
+schedules due to protocol violation or unsatisfied constraints, it SHALL reply with `"errorNumber": 2` (protocol error).
+The following requirements apply to the schedules data:
+
+* Schedules of the same type SHALL NOT overlap in time
+* The `time` must be specified in Coordinated Universal Time (UTC)
+* The `duration` SHALL NOT exceed 24 hours
+
+Upon receipt of the schedules, the local device SHALL immediately invalidate the previous schedules and apply the new ones.
+
+In case of a collision between a scheduled and an ad-hoc limit of the same type, the local device SHALL apply the more restrictive limit
+for the duration of the collision.
+
+Schedules rely on accurate date/clock synchronization.
+
+Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.control.schedules.json) demonstrating how to configure
+schedules.
+
+
 ## Acknowledgement {#ack}
 
 An acknowledgement message SHALL be sent as a reply by the local device to communicate whether the corresponding request
@@ -490,6 +528,7 @@ The data model for `state` messages consists of the following top-level properti
 * `demands` - power demand forecasts from the local device
 * `timestamp` - the timestamp indicating the moment when the message was created
 * `notify` - the current configuration of the notifications
+* `schedules` - configured schedules
 
 The backend can read the current state of the local device by sending a `read` message (refer to the [Read](@ref Read)
 section for details). In the case of a `read` message with empty `parameters`, all properties that are not present in
@@ -521,8 +560,8 @@ not be available anymore at the local device.
 
 Additionally, a local device can send unsolicited updates of its state. When notifying the state, not all top-level
 properties have to be set. This allows the local device to notify only the properties that have changed. When any of the
-`limits`, `failsafes`, `tariffs`, `constraints`, `supportedEebusUseCases`, `demands` or `notify` top-level property
-are set, they SHALL reflect the complete current state of those top-level properties
+`limits`, `failsafes`, `tariffs`, `constraints`, `supportedEebusUseCases`, `demands`, `notify`, `trust`, `fallbacks` or
+`schedules` top-level property are set, they SHALL reflect the complete current state of those top-level properties
 <span id="REQ-36"><a href="#REQ-36">[REQ-36]</a></span>.
 When the `measurements` top-level property is set, every array element SHALL reflect the complete current state of the
 measurement source represented by that `id`.
@@ -688,6 +727,24 @@ durationStepSize | Step size of the duration
 
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.state_envelope.json) showing constraints for all curves.
 
+#### Schedules {#StateSchedulesConstraints}
+
+Local devices may define the following constraints for control message with schedules:
+
+Constraint       | Semantics of Value
+---------------- | ---------------------------------------------------------
+maxSchedules     | Maximal allowed number of schedules
+timeResolution   | Time resolution in seconds
+
+The `timeResolution` specifies the precision with which the local device applies scheduled commands (both time and duration).
+For example if the timeResolution is defined to be 60 seconds, the local devices guarantees to apply schedule commands not
+earlier than 30 seconds before and not later than 30 seconds after the scheduled time.
+
+The duration of the schedules command SHALL NOT be shorter than the `timeResolution`. The local device SHALL reject the
+schedule with `"errorNumber": 2` (protocol error) if the duration is shorter than the `timeResolution`.
+
+Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.state.schedulesConstraints.json) showing constraints for schedules.
+
 
 ### Measurements {#StateMeasurements}
 
@@ -817,6 +874,14 @@ The current configuration of the notifications.
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.state.notify.json) demonstrating the observed state
 of the configured notifications.
 
+### Schedules {#StateSchedules}
+
+The current configuration of the schedules. Every valid schedule entry with the associated `value`, `time` and
+`duration` is displayed.
+
+Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.state.schedules.json) demonstrating the observed state
+of the configured schedules.
+
 ## Read {#Read}
 
 Either side of the connection can send a `read` message to the other side. Upon receiving a `read` message,
@@ -840,6 +905,7 @@ The following list shows the top-level properties from which to retrieve informa
 * `measurements`
 * `demands`
 * `notify`
+* `schedules`
 
 The local device cannot configure the information it wants to receive. Instead, upon sending a `read` message, the
 backend SHALL send all the information accumulated up to that moment in a `control` message

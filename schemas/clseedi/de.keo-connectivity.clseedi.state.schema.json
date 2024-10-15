@@ -204,6 +204,10 @@
                             "$ref": "file:definitions.schema.json#/definitions/tariffsToutConstraint"
                         }
                     }
+                },
+                "schedules": {
+                    "type": "object",
+                    "$ref": "file:definitions.schema.json#/definitions/schedulesConstraint"
                 }
             }
         },
@@ -222,6 +226,34 @@
         },
         "notify": {
             "$ref": "file:definitions.schema.json#/definitions/notify"
+        },
+        "schedules": {
+            "type": "array",
+            "items": {
+                "properties": {
+                    "limit": {
+                        "type": "object",
+                        "properties": {
+                            "power": {
+                                "type": "object",
+                                "properties": {
+                                    "active": {
+                                        "type": "object",
+                                        "properties": {
+                                            "consumption": {
+                                                "$ref": "file:definitions.schema.json#/definitions/schedulesLimitPowerActive"
+                                            },
+                                            "production": {
+                                                "$ref": "file:definitions.schema.json#/definitions/schedulesLimitPowerActive"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "required": [
