@@ -435,6 +435,7 @@ The following table defines what kind of measurement data the backed wants to be
 ------------ | ---------------------------------------------------------------------------------------------------------
 gcp          | The backend wants to be notified about measurement data of the grid connection point of the premise.
 controllable | The backend wants to be notified about aggregated measurement data of all controllable devices in the local network.
+meter        | The backend wants to be notified about measurement data of a specific meter behind the grid connection point of the premise.
 
 If other values than the ones defined in this table are encountered, no notifications for that source type SHALL be
 sent
@@ -518,6 +519,7 @@ Take a look at the schema and an example:
 
 The data model for `state` messages consists of the following top-level properties:
 
+* `trust` - the currently trusted SHIP devices
 * `limits` - the current status of the limits for consumption and production
 * `failsafes` - the current failsafe values for consumption and production
 * `fallbacks` - the fallback values for consumption and production curves
@@ -572,6 +574,24 @@ Take a look at the schema and an example:
 * [schema](clseedi/de.keo-connectivity.clseedi.state.schema.json)
 * [example](clseedi/examples/de.keo-connectivity.clseedi.state.json)
 
+
+### Trust {#StateTrust}
+
+The `trust` property in the `state` reflects the currently trusted SHIP devices.
+However, as the only information that always is known is the SKI (either entered as SKI or read from the certificate),
+only the SKI is ever returned. This also applies if the trust was added via a certificate.
+If the backend establishes trust based on certificates, it must be able to read/calculate
+the SKI in order to perform a comparison with the stored trust data.
+
+```
+{
+    "trust": [
+        {
+            "ski": "607d3342a4eeb06f33094386644991cd4b80125b"
+        }
+    ]
+}
+```
 
 ### Limits {#StateLimits}
 
@@ -762,9 +782,20 @@ values.
 The array `measurements` can contain multiple sets of measurement values. Each JSON object in the array represents one
 set of measurement values. Each set of measurement values consists of
 
-- a unique ID representing the set of measurement values
+- a unique ID representing the meter source
+- an ID type defining the type of ID being used (optional)
 - a type describing the source of the measurement values
 - the actual measurement values
+
+The element `idType` is optional. If it is set, it defines the type of the ID in the element `id`.
+Currently, the following ID types are defined.
+
+`idType`     | Definition
+------------ | -----------------------------------------------------------------------------------------------------------------------------------------
+DIN-43863-5  | German "Herstellerübergreifende Identifikationsnummer für Messeinrichtungen" as defined in `DIN-43863-5` without spaces (e.g. `1KEO1234567890`).
+
+If another value than the ones defined in this table are encountered or the `idType` is not set, the ID does not
+relate to any standard and should just be taken as a unique identifier for the meter source.
 
 Currently, the following measurement device types are defined.
 
@@ -772,6 +803,7 @@ Currently, the following measurement device types are defined.
 ------------ | ---------------------------------------------------------
 gcp          | Represents the grid connection point of a premise.
 controllable | Represents all controllable devices in the local network.
+meter        | Represents a specific meter behind the grid connection point of a premise.
 
 If other values than the ones defined in this table are encountered, the complete set of measurements for this source
 SHALL be ignored
@@ -896,6 +928,7 @@ with an empty parameter list, it indicates that the backend intends to receive a
 current moment.
 
 The following list shows the top-level properties from which to retrieve information:
+* `trust`
 * `limits`
 * `failsafes`
 * `fallbacks`

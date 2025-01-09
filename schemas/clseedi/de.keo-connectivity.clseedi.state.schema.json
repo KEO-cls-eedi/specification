@@ -105,6 +105,11 @@
                         "description": "A unique ID representing a set of measurement values.",
                         "maxLength": 256
                     },
+                    "idType": {
+                        "type": "string",
+                        "description": "Defines the type of the ID being used.",
+                        "maxLength": 64
+                    },
                     "source": {
                         "$ref": "file:definitions.schema.json#/definitions/source"
                     },
@@ -227,30 +232,13 @@
         "notify": {
             "$ref": "file:definitions.schema.json#/definitions/notify"
         },
-        "schedules": {
+        "trust": {
             "type": "array",
             "items": {
+                "type": "object",
                 "properties": {
-                    "limit": {
-                        "type": "object",
-                        "properties": {
-                            "power": {
-                                "type": "object",
-                                "properties": {
-                                    "active": {
-                                        "type": "object",
-                                        "properties": {
-                                            "consumption": {
-                                                "$ref": "file:definitions.schema.json#/definitions/schedulesLimitPowerActive"
-                                            },
-                                            "production": {
-                                                "$ref": "file:definitions.schema.json#/definitions/schedulesLimitPowerActive"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    "ski": {
+                        "$ref": "file:definitions.schema.json#/definitions/ski"
                     }
                 }
             }
