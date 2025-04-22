@@ -193,7 +193,7 @@ EEBUS use cases:
 * POEN - a limitation curve(s) for limitation of consumption and production power over time
 
 #### Ad-hoc limits (LPC/LPP) {#AdhocLimits}
-A power limit consists of these properties:
+A power limit consists of these properties and can be set for the consumption and production direction:
 
 * `value` - the limit for active power in W as an integer
 * `active` - if set to true the limit is to be applied by the local device, if set to false no limit has to be applied
@@ -236,8 +236,13 @@ If a scheduled limit is currently active, the backend SHALL NOT send an ad-hoc l
 The local device SHALL reply with a negative acknowledgement message with `"errorNumber": 2` (protocol error) to an ad-hoc limit that is deactivated
 or allows higher consumption or production than the currently active scheduled limit.
 
-
 #### Limit curves (POEN) {#LimitCurves}
+
+The POEN use cases defines two types of curves. One is the limit curve (described here) and the other is the [fallback curve](@ref ControlFallbacks).
+Both curves exist for both directions (production and consumption).
+In contrast to the ad-hoc limits, the curves specify a time windows between which power consumption and production (grid feed-in) should move.
+Please note that the [constraints](@ref StateEnvelopeConstraints) for both can also be different.
+
 A power limit curve consists of these properties:
 * `startTime` - the start time (in seconds since epoch) for the first slot
 * `slots` - the slots of the curve
@@ -248,6 +253,39 @@ The `slots` consists of these properties:
 * `duration` - the duration of the slot in seconds (mandatory for the very first slot, if omitted, the last set duration will be used for the slot)
 
 All limit curves must satisfy the corresponding constraints (see section [constraints](@ref StateEnvelopeConstraints)).
+
+A power curve is added as envelope to the limits element.
+
+```
+{
+    "limits": {
+        "power": {
+            "active": {
+                "envelope": {
+                    "consumption": {
+                        "startTime": 1718791994,
+                        "slots": [
+                            {
+                                "pMin": 400,
+                                "pMax": 4000,
+                                "duration": 900
+                            },
+                            {
+                                "pMax": 2000
+                            },
+                            {
+                                "duration": 19800,
+                                "pMin": 200,
+                                "pMax": 1000
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
+```
 
 ### Failsafes {#ControlFailsafes}
 
@@ -271,12 +309,12 @@ trigger the failsafe state. Because CLS.EEDI is used for wide area communication
 Consequently, the failsafe state is only related to EEBUS communication in the home area network and not related to CLS
 connectivity between the local device and the backend. CLS.EEDI supports setting the failsafe limits only.
 
-### Fallbacks {#ControlFallbacks}
+### Fallbacks curves (POEN) {#ControlFallbacks}
 
 Fallback curves are used in the POEN use case. They exist for the maximum consumption and the maximum production values.
 A curve SHALL cover the whole day with the start time defined as 00:00:00Z (i.e. 12AM UTC). Gaps between slots are not allowed.
 
-All fallback curves must satisfy the corresponding constraints (see section [constraints](@ref StateEnvelopeConstraints)).
+There are separate curves for consumption and production, which relate to their own [constraints](@ref StateEnvelopeConstraints) that they must fulfil.
 
 ```
 {
@@ -743,6 +781,8 @@ maxSlots         | Maximal allowed slots (mandatory)
 pValueMin        | Minimal allowed power value (mandatory)
 pValueMax        | Maximal allowed power value (mandatory)
 pValueStepSize   | Step size of the power value
+durationMin      | The minimum required duration in seconds
+durationMax      | The maximum allowed duration in seconds
 durationStepSize | Step size of the duration
 
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.state_envelope.json) showing constraints for all curves.

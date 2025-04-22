@@ -5,7 +5,7 @@
     "specversion": "1.0",
     "data": {
         "timestamp": 1728547810,
-        "protocol": "0.6.1",
+        "protocol": "0.6.2",
         "constraints": {
             "schedules": {
                 "maxSchedules": 10,

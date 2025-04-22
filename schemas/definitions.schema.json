@@ -542,21 +542,36 @@
             "type": "object",
             "properties": {
                 "minSlots": {
+                    "description": "Minimal required slots",
                     "type": "integer"
                 },
                 "maxSlots": {
+                    "description": "Maximal allowed slots",
                     "type": "integer"
                 },
                 "pValueMin": {
+                    "description": "Minimum allowed power value",
                     "type": "integer"
                 },
                 "pValueMax": {
+                    "description": "Maximal allowed power value",
                     "type": "integer"
                 },
                 "pValueStepSize": {
+                    "description": "Step size of the power value",
+                    "type": "integer"
+                },
+                "durationMin": {
+                    "description": "The minimum required duration [s] (uint32)",
+                    "type": "integer",
+                    "minimum": 300
+                },
+                "durationMax": {
+                    "description": "The maximum allowed duration [s] (uint32)",
                     "type": "integer"
                 },
                 "durationStepSize": {
+                    "description": "Step size of the duration",
                     "type": "integer"
                 }
             },
