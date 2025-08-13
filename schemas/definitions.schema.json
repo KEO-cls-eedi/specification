@@ -362,6 +362,33 @@
                 "607d3342a4eeb06f33094386644991cd4b80125b"
             ]
         },
+        "forId": {
+            "type": "string",
+            "description": "devA-SHIP-ID",
+            "examples": [
+                "i:98765_u:238bfn2299vfb3"
+            ]
+        },
+        "forPar": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 fingerprint of devA-certificate",
+            "minLength": 64,
+            "maxLength": 64,
+            "examples": [
+                "e58fd8e1a1b3f9632a81febe11954962ae2b9e5b0eb567f28c2a01b2c1009073"
+            ]
+        },
+        "secret": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$",
+            "description": "devA secret for shipPairing",
+            "minLength": 32,
+            "maxLength": 32,
+            "examples": [
+                "b53236794fb10b75e531ce316145621d"
+            ]
+        },
         "currency": {
             "type": "string",
             "description": "A string representing a currency as defined in ISO 4217:2015"

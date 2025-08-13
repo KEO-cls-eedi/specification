@@ -4,7 +4,7 @@
     "id": "cd5ef2d8-6446-4749-8095-82dc649977b4",
     "specversion": "1.0",
     "data": {
-        "protocol": "0.6.2",
+        "protocol": "0.6.3",
         "schedules": [
             {
                 "limit": {

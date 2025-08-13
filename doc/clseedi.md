@@ -124,6 +124,22 @@ Backend <-d-- Broker : clseedi/from-localdevice/+
 Backend --d-> Broker : clseedi/to-localdevice/A \n clseedi/to-localdevice/B
 @enduml
 
+# Connection state of the local device
+
+To ensure the backend is always aware of the connection status of the local device, a message of the type
+`de.keo-connectivity.clseedi.localDeviceStatus` SHALL be sent to the \<FROM_LOCAL_DEVICE\>/<b>deviceStatus</b> topic.
+This message includes a boolean field representing the connection status. Upon establishing a connection, the message
+SHALL be sent with the retain flag set to true and the connection status set to true. Simultaneously, the same message
+SHALL be configured as the Last Will and Testament (LWT) with the connection status set to false. Additionally, the
+message id should be newly generated each time the message is created. This setup ensures that the backend can always
+determine the current connection status of the local device.
+
+* [de.keo-connectivity.clseedi.localDeviceStatus.schema.json](de.keo-connectivity.clseedi.localDeviceStatus.schema.json) defines the structure of this message.
+* [de.keo-connectivity.clseedi.localDeviceStatus.json](de.keo-connectivity.clseedi.localDeviceStatus.json) an example showing the device not connected, without timestamp.
+* [de.keo-connectivity.clseedi.localDeviceStatus_connected.json](de.keo-connectivity.clseedi.localDeviceStatus_connected.json) an example showing the device connected, with timestamp.
+
+The timestamp is defined optional in the schema; however, it SHALL be set when the connection status is true and SHALL not be set for the LWT, as the disconnection time is unknown.
+
 # Data Model
 
 The data model is defined in the form of JSON schemas. Each type (`control`, `state`, `read`, `ack`) is defined in a
@@ -149,6 +165,7 @@ examples to get started:
   * [Setting a tariff](clseedi/examples/de.keo-connectivity.clseedi.control.tariffs.json)
   * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
   * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
+  * [Trusting based on SHIP pairing service](clseedi/examples/de.keo-connectivity.clseedi.control.shipPairingService.json)
   * [Configure notifications](clseedi/examples/de.keo-connectivity.clseedi.control.notify.json)
   * [Configure schedules](clseedi/examples/de.keo-connectivity.clseedi.control.schedules.json)
 
@@ -449,11 +466,21 @@ A trust payload is an array. Each array item can have one of two properties:
 
 * `certificate` - a full X.509 SHIP certificate in DER format, hex-encoded
 * `ski` - just an SKI
+* `shipPairingService` - a SHIP pairing service object
 
-Here are two examples:
+The `shipPairingService` object implements the `EEBus TR SHIP pairing service proposal`, which allows to establish EEBUS SHIP mutual trust
+without further local interaction. For this a special mDns service must be announced by the local device, which requires
+the backend to send the following data to the local device:
+* `forId` - the SHIP ID of the device, which must be trusted
+* `forPar` - the SHA256 fingerprint of the trusted device's certificate
+* `secret` - the secret string, read out locally from the trusted device
+Note: The schema also defines `ski`, but this can only be set by the local device. Please have a look for further details at [StateTrust](@ref StateTrust).
+
+Here are three examples:
 
 * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
 * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
+* [Trusting based SHIP pairing service](clseedi/examples/de.keo-connectivity.clseedi.control.shipPairingService.json)
 
 SHIP trust setup usually happens just once, for example during the initial installation of the local devices.
 
@@ -615,9 +642,10 @@ Take a look at the schema and an example:
 
 ### Trust {#StateTrust}
 
-The `trust` property in the `state` reflects the currently trusted SHIP devices.
-However, as the only information that always is known is the SKI (either entered as SKI or read from the certificate),
-only the SKI is ever returned. This also applies if the trust was added via a certificate.
+The `trust` property in the `state` contains an array of the currently trusted SHIP devices.
+An array entry with `ski` value reflects either an SKI, received from the backend or an SKI, extracted from
+the certificate, which was received from the backend (the certificate itself is never returned), or an SKI of the peer,
+which was trusted using the SHIP pairing service and the connection to which was already succesfully established.
 If the backend establishes trust based on certificates, it must be able to read/calculate
 the SKI in order to perform a comparison with the stored trust data.
 
@@ -630,6 +658,43 @@ the SKI in order to perform a comparison with the stored trust data.
     ]
 }
 ```
+
+With the introduction of the shipPairingService, the backend is able to recognize whether a trust has been successfully established or not.
+If the trust is read, the shipPairingService entry always contains the initial forPar, forId and secret and may or may not contain the ski,
+depending on if the trust is still pending (connection never established) or not.
+
+Example of trust pending
+
+```
+    "trust": [
+            {
+            "shipPairingService": {
+                "forId": "i:98765_u:238bfn2299vfb3",
+                "forPar": "e58fd8e1a1b3f9632a81febe11954962ae2b9e5b0eb567f28c2a01b2c1009073",
+                "secret": "b53236794fb10b75e531ce316145621d"
+            }
+        }
+    ]
+```
+
+Example of trust established
+
+```
+    "trust": [
+            {
+                "ski": "607d3342a4eeb06f33094386644991cd4b80125b"
+            },
+            {
+            "shipPairingService": {
+                "forId": "i:98765_u:238bfn2299vfb3",
+                "forPar": "e58fd8e1a1b3f9632a81febe11954962ae2b9e5b0eb567f28c2a01b2c1009073",
+                "secret": "b53236794fb10b75e531ce316145621d",
+                "ski": "607d3342a4eeb06f33094386644991cd4b80125b"
+            }
+        }
+    ]
+```
+
 
 ### Limits {#StateLimits}
 
