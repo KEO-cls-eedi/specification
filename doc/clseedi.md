@@ -28,10 +28,11 @@ There are two roles defined in CLS.EEDI:
 1. The backend
 2. The local device
 
-The communication primitives are as follows:
+ The local device may represent multiple subsequent devices connected to it, which can be addressed independently.
+ The communication primitives are as follows:
 
-- The backend sends `control` messages to the local device, the local device acknowledges them with an `ack` message
-- The local device sends `state` messages to the backend
+- The backend sends `control` messages to the local device (or one of connected subsequent devices), the local device acknowledges them with an `ack` message
+- The local device sends `state` messages to the backend, that represent its own state or the state of a subsequent device
 - Both sides can request an update of `control` or `state` respectively by sending a `read` message
 
 @startuml
@@ -84,32 +85,38 @@ The following rules SHALL be applied when introducing a new version of CLS.EEDI 
 
 MQTT SHALL be used to exchange messages between the backend and a local device
 <span id="REQ-7"><a href="#REQ-7">[REQ-7]</a></span>.
-Two distinct topics shall be used to transmit messages
+Two distinct base topics shall be used to transmit messages with the local device
 <span id="REQ-8"><a href="#REQ-8">[REQ-8]</a></span>:
 
 * one topic for messages from the backend to the local device
 * one topic for messages from the local device to the backend
 
-This specification does not dictate specific topics. **For any use of CLS.EEDI, close coordination between the backend
+To exchange messages with a subsequent device the base topics SHALL be extended with a unique id of that device. The topic extension SHALL
+consist of the name of the layer, within which the following id uniquely identifies the subsequent device, and the unique id itself.
+In the current version only subsequent devices connected to the local device via EEBUS SHIP protocol are supported.
+Only `ship` SHALL be used as the layer name and the SHIP ID as the id of the subsequent device.
+
+This specification does not dictate specific base topics. **For any use of CLS.EEDI, close coordination between the backend
 and the operators of the local devices is required to find a suitable and appropriate scheme for topics**.
 
 ## Example topic scheme
 
 Assuming we have a backend and two local devices:
 
-* Device A with a unique identifier `A`
+* Device A with a unique identifier `A` with a subsequent device `ship1`
 * Device B with a unique identifier `B`
 
 The backend wants to send messages to either of those devices. When receiving messages the backend needs to be able to
 identify which local device has sent the message. Topics can be chosen accordingly.
 
-The backend subscribes to `clseedi/from-localdevice/+` to receive messages from both devices. For sending, the backend
-can publish to `clseedi/to-localdevice/A` and `clseedi/to-localdevice/B`. Device A subscribes to
-`clseedi/to-localdevice/A` and publishes to `clseedi/from-localdevice/A`. Device B subscribes to
+The backend subscribes to `clseedi/from-localdevice/#` to receive messages from both local devices and their subsequent devices.
+For sending, the backend can publish to `clseedi/to-localdevice/A` or `clseedi/to-localdevice/A/ship/shipId1` and `clseedi/to-localdevice/B`. Device A subscribes to
+`clseedi/to-localdevice/A/#` and publishes to `clseedi/from-localdevice/A` or `clseedi/from-localdevice/A/ship/shipId1`. Device B subscribes to
 `clseedi/to-localdevice/B` and publishes to `clseedi/from-localdevice/B`.
 
 @startuml
 rectangle "Device A" as A
+rectangle "Subsequent device 'ship1'" as A1
 rectangle "Device B" as B
 cloud Broker
 cloud Backend
@@ -120,9 +127,39 @@ A --r-> Broker : clseedi/from-localdevice/A
 B <-l-- Broker : clseedi/to-localdevice/B
 B --l-> Broker : clseedi/from-localdevice/B
 
-Backend <-d-- Broker : clseedi/from-localdevice/+
-Backend --d-> Broker : clseedi/to-localdevice/A \n clseedi/to-localdevice/B
+A <-r.. Broker : clseedi/to-localdevice/A/ship/shipId1
+A ..r-> Broker : clseedi/from-localdevice/A/ship/shipId1
+A <-d.. A1 : clseedi/from-localdevice/A/ship/shipId1
+A ..d-> A1 : clseedi/to-localdevice/A/ship/shipId1
+
+Backend <-d-- Broker : clseedi/from-localdevice/#
+Backend --d-> Broker : clseedi/to-localdevice/A \n clseedi/to-localdevice/A/ship/shipId1 \n clseedi/to-localdevice/B
 @enduml
+
+## Character substitution in the topic
+
+Some characters have a special meaning in an MQTT topic or may generally be problematic for data processing or visualization. Such characters
+must be substituted with their HEX representation in capital letters prefixed by the '\%' sign (similar to URL encoding) before publishing to a topic.
+All unprintable characters (with HEX value less than 0x20 or with the value 0x7F), as well as '#', '$', '+', '/', ' ' and '\%' SHALL be substituted.
+For a subsequent device with a SHIP ID "12345%6#7/" the message SHALL be published to the topic `clseedi/from-localdevice/ship/12345%256%237%2F`
+The receiving side SHALL look for the `%` character in the last topic level and decode if necessary to obtain the original ID of the subsequent device.
+
+
+# Connection state of the local device
+
+To ensure the backend is always aware of the connection status of the local device, a message of the type
+`de.keo-connectivity.clseedi.localDeviceStatus` SHALL be sent to the \<FROM_LOCAL_DEVICE\>/<b>deviceStatus</b> topic.
+This message includes a boolean field representing the connection status. Upon establishing a connection, the message
+SHALL be sent with the retain flag set to true and the connection status set to true. Simultaneously, the same message
+SHALL be configured as the Last Will and Testament (LWT) with the connection status set to false. Additionally, the
+message id should be newly generated each time the message is created. This setup ensures that the backend can always
+determine the current connection status of the local device.
+
+* [de.keo-connectivity.clseedi.localDeviceStatus.schema.json](de.keo-connectivity.clseedi.localDeviceStatus.schema.json) defines the structure of this message.
+* [de.keo-connectivity.clseedi.localDeviceStatus.json](de.keo-connectivity.clseedi.localDeviceStatus.json) an example showing the device not connected, without timestamp.
+* [de.keo-connectivity.clseedi.localDeviceStatus_connected.json](de.keo-connectivity.clseedi.localDeviceStatus_connected.json) an example showing the device connected, with timestamp.
+
+The timestamp is defined optional in the schema; however, it SHALL be set when the connection status is true and SHALL not be set for the LWT, as the disconnection time is unknown.
 
 # Data Model
 
@@ -138,8 +175,11 @@ The payload types are explained in the following sections.
 
 ## Control
 
-A control message allows the backend to communicate its desires to the local device. Take a look at the schema and some
-examples to get started:
+A control message allows the backend to communicate its desires to the local device or one of the subsequent devices.
+If the local device does not support the functionality, required to execute the control command, the control message SHALL be replied with "errorNumber": 4 (command not supported).
+If the subsequent device is not connected or if it does not support the functionality, required to execute the control command,
+the control message SHALL be replied with "errorNumber": 4 (command not supported).
+Take a look at the schema and some examples to get started:
 
 * [schema](clseedi/de.keo-connectivity.clseedi.control.schema.json)
 * examples
@@ -178,8 +218,8 @@ When receiving a `control` message, that is not a reply to a `read`, the local d
 <span id="REQ-12"><a href="#REQ-12">[REQ-12]</a></span>.
 A positive acknowledgement message means that the element contained in the message was valid and has been processed.
 
-If an acknowledgment message for a `control` message is still pending and a subsequent `control` message for the same
-top-level property is received, the backend should reply with a negative acknowledgement set to `"errorNumber": 3`
+If an acknowledgment message for a `control` message is still pending and the next `control` message for the same device and the same
+top-level property is received, the backend SHALL reply with a negative acknowledgement set to `"errorNumber": 3`
 (command execution error).
 
 The different top-level properties are explained in more detail in the following sections.
@@ -227,8 +267,7 @@ controllable system has accepted it
 <span id="REQ-15"><a href="#REQ-15">[REQ-15]</a></span>,
 otherwise it SHALL reply with a negative acknowledgement message with `"errorNumber": 3` (command execution error)
 <span id="REQ-16"><a href="#REQ-16">[REQ-16]</a></span>.
-This can happen, for example when the controllable system rejects the limit. When no controllable system is attached
-the local device SHALL reply with a negative acknowledgement message with `"errorNumber": 4` (command not supported).
+This can happen, for example when the controllable system rejects the limit.
 
 The `active` flag can be used to deactivate a previously set limit.
 
@@ -301,8 +340,7 @@ controllable system has accepted it
 <span id="REQ-18"><a href="#REQ-18">[REQ-18]</a></span>,
 otherwise it SHALL reply with a negative acknowledgement message with `"errorNumber": 3` (command execution error)
 <span id="REQ-19"><a href="#REQ-19">[REQ-19]</a></span>.
-This can happen, when the controllable system rejects the failsafe value. When no controllable system is attached the
-local device SHALL reply with a negative acknowledgement message with `"errorNumber": 4` (command not supported).
+This can happen, when the controllable system rejects the failsafe value.
 
 In the EEBUS use cases LPC and LPP there is a heartbeat mechanism to monitor connectivity in the home area network and
 trigger the failsafe state. Because CLS.EEDI is used for wide area communication there is no heartbeat mechanism.
@@ -445,6 +483,8 @@ key) to the local device. The local device will then trust the certificates or t
 existing trust
 <span id="REQ-22"><a href="#REQ-22">[REQ-22]</a></span>.
 
+Sending trust entries to a subsequent device is not allowed and SHALL be replied with `"errorNumber": 2` (protocol error).
+
 A trust payload is an array. Each array item can have one of two properties:
 
 * `certificate` - a full X.509 SHIP certificate in DER format, hex-encoded
@@ -540,13 +580,14 @@ The acknowledgement is represented by the `errorNumber` element in the acknowled
 
 The following error numbers are defined:
 
-`errorNumber` | Error type              | Description/Reason
-------------- | ----------------------- | ----------------------------------------------------------------------------------------------
-0             | Success                 | Success
-1             | Schema error            | Invalid message, unable to parse, missing mandatory element
-2             | Protocol error          | Unexpected message, e.g. state message with an unknown relation, version mismatch or empty control message
-3             | Command execution error | The command could not be executed. There can be many reasons for that error, e.g. limit is rejected by the local device, certificate in trust is invalid or cannot be written, ...
-4             | Command not supported   | The command is not supported, e.g. there is no controllable system which supports limitation or that understands tariffs (see also [supportedUseCases](@ref supportedUseCases))
+`errorNumber` | Error type                    | Description/Reason
+------------- | ----------------------------- | ----------------------------------------------------------------------------------------------
+0             | Success                       | Success
+1             | Schema error                  | Invalid message, unable to parse, missing mandatory element
+2             | Protocol error                | Unexpected message, e.g. state message with an unknown relation, version mismatch or empty control message
+3             | Command execution error       | The command could not be executed. There can be many reasons for that error, e.g. limit is rejected by the local device, certificate in trust is invalid or cannot be written, ...
+4             | Command not supported         | The command is not supported, e.g. there is no controllable system which supports limitation or that understands tariffs (see also [supportedUseCases](@ref supportedUseCases))
+5             | Subsequent device unavailable | The subsequent device is unavailable or unknown
 
 Take a look at the schema and an example:
 
@@ -760,7 +801,7 @@ preliminary.
 The local device may define constraints, which must be considered in the control messages, sent by the backend.
 Constraints may not be changed by the backend. The local device SHALL NOT set constraints if relevant control is not supported and SHALL NOT support an use case when mandatory constraints are missing.
 For example if tariffs are not supported by the local device, the local device SHALL NOT set tariff constraints in the state message <span id="REQ-39"><a href="#REQ-39">[REQ-39]</a></span>.
-When a control message violates a constraint, the message SHALL be rejected with a negative acknowledgement set to "errorNumber": 2 (protocol error).
+When a control message violates a constraint, the message SHALL be rejected with a negative acknowledgement set to `"errorNumber": 2` (protocol error).
 
 #### Tariffs {#StateTariffsConstraints}
 
@@ -901,8 +942,8 @@ preliminary.
 
 ### Supported EEBUS use cases {#supportedUseCases}
 
-The `supportedEebusUseCases` property describes the EEBUS use cases supported by the local device. The presence of an
-EEBUS use case in this array indicates that the use case or equivalent functionality is available in the local network.
+The `supportedEebusUseCases` property describes the EEBUS use cases supported by the local device or the subsequent device. The presence of an
+EEBUS use case in this array indicates that the use case or equivalent functionality is supported by the device.
 If the functionality for a use case is no longer available the use case SHALL be removed from the array
 <span id="REQ-45"><a href="#REQ-45">[REQ-45]</a></span>.
 A `state` message including the `supportedEebusUseCases` property SHALL be sent to the backend immediately after the
@@ -924,13 +965,13 @@ The following table defines which functionality is represented how in the `suppo
 If other values than the ones defined in this table are encountered, the array entry SHALL be ignored
 <span id="REQ-47"><a href="#REQ-47">[REQ-47]</a></span>.
 
-The following top-level properties of `control` messages can be expected to be handled by local device when the use case is present:
+The following top-level properties of `control` messages can be expected to be handled by the receiving device when the use case is present:
 * `lpc` - [limits](@ref ControlLimits) and [failsafes](@ref ControlFailsafes)
 * `lpp` - [limits](@ref ControlLimits) and [failsafes](@ref ControlFailsafes)
 * `tout` - [tariffs](@ref ControlTariffs)
 * `poen` - [limits](@ref LimitCurves) and [fallbacks](@ref ControlFallbacks)
 
-The following top-level properties of `state` messages can be expected to be set by the local network when the use case is present:
+The following top-level properties of `state` messages can be expected to be set by the device when the use case is present:
 * `lpc` - [limits](@ref StateLimits) and [failsafes](@ref StateFailsafes)
 * `lpp` - [limits](@ref StateLimits) and [failsafes](@ref StateFailsafes)
 * `tout` - [tariffs](@ref StateTariffs), [constraints](@ref StateTariffsConstraints)
@@ -959,13 +1000,14 @@ of the configured schedules.
 Either side of the connection can send a `read` message to the other side. Upon receiving a `read` message,
 
 * the backend sends a `control` message <span id="REQ-48"><a href="#REQ-48">[REQ-48]</a></span>.
-* the local device sends a `state` message <span id="REQ-49"><a href="#REQ-49">[REQ-49]</a></span>.
+* the local device sends a `state` message which represents its own state or the state of a subsequent device<span id="REQ-49"><a href="#REQ-49">[REQ-49]</a></span>.
 
 The backend can configure the specific information it wants to receive from the local device by specifying the desired
 top-level [state](@ref State) properties in the `read` message. By selectively choosing the parameters, the backend can
 effectively filter the data and retrieve only the relevant information. Alternatively, if the `read` message is sent
 with an empty parameter list, it indicates that the backend intends to receive all available information up to the
 current moment.
+The trust element SHALL NOT be read from subsequent devices, otherwise it SHALL be replied with `"errorNumber": 2` (protocol error).
 
 The following list shows the top-level properties from which to retrieve information:
 * `trust`

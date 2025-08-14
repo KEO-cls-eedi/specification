@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "$id": "https://keo-connectivity.de/clseedi/de.keo-connectivity.clseedi.localDeviceStatus.schema.json",
+    "title": "Status message of the local device",
+    "description": " A status message representing the state of the localdevice (connected)",
+    "type": "object",
+    "properties": {
+        "protocol": {
+            "$ref": "file:definitions.schema.json#/definitions/protocolversion"
+        },
+        "timestamp": {
+            "$ref": "file:definitions.schema.json#/definitions/timestamp"
+        },
+        "connected": {
+            "type": "boolean",
+            "description": "Flag that represents the connection status of the localdevice."
+        }
+    },
+    "required": [
+        "protocol",
+        "connected"
+    ]
+}
