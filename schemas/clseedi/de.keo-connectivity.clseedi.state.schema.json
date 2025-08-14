@@ -239,6 +239,30 @@
                 "properties": {
                     "ski": {
                         "$ref": "file:definitions.schema.json#/definitions/ski"
+                    },
+                    "shipPairingService": {
+                        "description": "Representation of the SHIP pairing serivce",
+                        "type": "object",
+                        "properties": {
+                            "forId": {
+                                "$ref": "file:definitions.schema.json#/definitions/forId"
+                            },
+                            "forPar": {
+                                "$ref": "file:definitions.schema.json#/definitions/forPar"
+                            },
+                            "secret": {
+                                "$ref": "file:definitions.schema.json#/definitions/secret"
+                            },
+                            "ski": {
+                                "description": "The SKI if known (succesfull connection was already established)",
+                                "$ref": "file:definitions.schema.json#/definitions/ski"
+                            }
+                        },
+                       "required": [
+                            "forId",
+                            "forPar",
+                            "secret"
+                        ]
                     }
                 }
             }
