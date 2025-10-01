@@ -23,7 +23,7 @@
             ]
         },
         "source": {
-            "description": "The source of the message",
+            "description": "The source of the message, currently has no defined meaning and may be ignored",
             "$comment": "CloudEvents v1.0 'source'",
             "type": "string"
         },

@@ -5,7 +5,7 @@
     "specversion": "1.0",
     "data": {
         "timestamp": 1753454483,
-        "protocol": "0.6.3",
+        "protocol": "1.2.0-exp",
         "trust": [
             {
                 "shipPairingService": {

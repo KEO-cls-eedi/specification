@@ -4,7 +4,7 @@
     "id": "664f5c10-5b9a-462d-b684-ed6e0c3f8f65",
     "specversion": "1.0",
     "data": {
-        "protocol": "0.6.3",
+        "protocol": "1.2.0-exp",
         "connected": false
     }
 }
