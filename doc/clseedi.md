@@ -15,7 +15,9 @@ It makes use of the MQTT protocol for the message transfer. CLS.EEDI uses JSON f
 # Requirements
 
 - A communication channel between the backend system and the local device is established
+  <span id="REQ-1"><a href="#REQ-1">[REQ-1]</a></span>
 - Clocks are synchronized
+  <span id="REQ-2"><a href="#REQ-2">[REQ-2]</a></span>
 
 # Introduction
 
@@ -24,10 +26,11 @@ There are two roles defined in CLS.EEDI:
 1. The backend
 2. The local device
 
-The communication primitives are as follows:
+ The local device may represent multiple subsequent devices connected to it, which can be addressed independently.
+ The communication primitives are as follows:
 
-- The backend sends `control` messages to the local device, the local device acknowledges them with an `ack` message
-- The local device sends `state` messages to the backend
+- The backend sends `control` messages to the local device (or one of connected subsequent devices), the local device acknowledges them with an `ack` message
+- The local device sends `state` messages to the backend, that represent its own state or the state of a subsequent device
 - Both sides can request an update of `control` or `state` respectively by sending a `read` message
 
 @startuml
@@ -58,46 +61,63 @@ versions are made.
 The following rules SHALL be applied when receiving CLS.EEDI messages.
 
 - Messages from devices implementing a different major version of CLS.EEDI SHALL be replied to with a negative
-  acknowledgement message (`de.keo-connectivity.clseedi.ack`). To avoid an endless back and forth of acknowledgement
-  messages, acknowledgement messages SHALL not be replied to with an acknowledgement message.
+  acknowledgement message (`de.keo-connectivity.clseedi.ack`)
+  <span id="REQ-3"><a href="#REQ-3">[REQ-3]</a></span>.
+  To avoid an endless back and forth of acknowledgement messages, acknowledgement messages SHALL not be replied to with
+  an acknowledgement message
+  <span id="REQ-4"><a href="#REQ-4">[REQ-4]</a></span>.
 - Key/value pairs in JSON objects, the name of which are unknown according to the CLS.EEDI specification implemented by
-  the receiving device, SHALL be ignored.
+  the receiving device, SHALL be ignored
+  <span id="REQ-5"><a href="#REQ-5">[REQ-5]</a></span>.
 - Some strings with defined value sets are not modelled as `enum` in the JSON schema. When encountering an unknown value
-  in such a string, the value SHALL be ignored. The following sections may define additional steps for specific strings.
+  in such a string, the value SHALL be ignored.
+  <span id="REQ-6"><a href="#REQ-6">[REQ-6]</a></span>.
+  The following sections may define additional steps for specific strings.
 
-The following rules SHALL be applied when introducing a new version of CLS.EEDI within the same major version.
+The following rules SHALL be applied when introducing a new version of CLS.EEDI within the same major version <span id="REQ-69"><a href="#REQ-69">[REQ-69]</a></span>.
 - new key/value pairs SHALL NOT be marked `required`
 - existing key/value pairs that are marked `required` SHALL NOT be removed
 - the type of the value of an existing key/value pair SHALL NOT be changed
 
 # Transport
 
-MQTT SHALL be used to exchange messages between the backend and a local device. Two distinct topics shall be used to
-transmit messages:
+MQTT SHALL be used to exchange messages between the backend and a local device
+<span id="REQ-7"><a href="#REQ-7">[REQ-7]</a></span>.
+Two distinct base topics shall be used to transmit messages with the local device
+<span id="REQ-8"><a href="#REQ-8">[REQ-8]</a></span>:
 
 * one topic for messages from the backend to the local device
 * one topic for messages from the local device to the backend
 
-This specification does not dictate specific topics. **For any use of CLS.EEDI, close coordination between the backend
+To exchange messages with a subsequent device the base topics SHALL be extended with a unique id of that device
+<span id="REQ-70"><a href="#REQ-70">[REQ-70]</a></span>.
+The topic extension SHALL consist of the name of the layer, within which the following id uniquely identifies the
+subsequent device, and the unique id itself <span id="REQ-71"><a href="#REQ-71">[REQ-71]</a></span>.
+In the current version only subsequent devices connected to the local device via EEBUS SHIP protocol are supported.
+Only `ship` SHALL be used as the layer name and the SHIP ID as the id of the subsequent device
+<span id="REQ-51"><a href="#REQ-51">[REQ-51]</a></span>.
+
+This specification does not dictate specific base topics. **For any use of CLS.EEDI, close coordination between the backend
 and the operators of the local devices is required to find a suitable and appropriate scheme for topics**.
 
 ## Example topic scheme
 
 Assuming we have a backend and two local devices:
 
-* Device A with a unique identifier `A`
+* Device A with a unique identifier `A` with a subsequent device `ship1`
 * Device B with a unique identifier `B`
 
 The backend wants to send messages to either of those devices. When receiving messages the backend needs to be able to
 identify which local device has sent the message. Topics can be chosen accordingly.
 
-The backend subscribes to `clseedi/from-localdevice/+` to receive messages from both devices. For sending, the backend
-can publish to `clseedi/to-localdevice/A` and `clseedi/to-localdevice/B`. Device A subscribes to
-`clseedi/to-localdevice/A` and publishes to `clseedi/from-localdevice/A`. Device B subscribes to
+The backend subscribes to `clseedi/from-localdevice/#` to receive messages from both local devices and their subsequent devices.
+For sending, the backend can publish to `clseedi/to-localdevice/A` or `clseedi/to-localdevice/A/ship/shipId1` and `clseedi/to-localdevice/B`. Device A subscribes to
+`clseedi/to-localdevice/A/#` and publishes to `clseedi/from-localdevice/A` or `clseedi/from-localdevice/A/ship/shipId1`. Device B subscribes to
 `clseedi/to-localdevice/B` and publishes to `clseedi/from-localdevice/B`.
 
 @startuml
 rectangle "Device A" as A
+rectangle "Subsequent device 'ship1'" as A1
 rectangle "Device B" as B
 cloud Broker
 cloud Backend
@@ -108,9 +128,42 @@ A --r-> Broker : clseedi/from-localdevice/A
 B <-l-- Broker : clseedi/to-localdevice/B
 B --l-> Broker : clseedi/from-localdevice/B
 
-Backend <-d-- Broker : clseedi/from-localdevice/+
-Backend --d-> Broker : clseedi/to-localdevice/A \n clseedi/to-localdevice/B
+A <-r.. Broker : clseedi/to-localdevice/A/ship/shipId1
+A ..r-> Broker : clseedi/from-localdevice/A/ship/shipId1
+A <-d.. A1 : clseedi/from-localdevice/A/ship/shipId1
+A ..d-> A1 : clseedi/to-localdevice/A/ship/shipId1
+
+Backend <-d-- Broker : clseedi/from-localdevice/#
+Backend --d-> Broker : clseedi/to-localdevice/A \n clseedi/to-localdevice/A/ship/shipId1 \n clseedi/to-localdevice/B
 @enduml
+
+## Character substitution in the topic
+
+Some characters have a special meaning in an MQTT topic or may generally be problematic for data processing or visualization. Such characters
+must be substituted with their HEX representation in capital letters prefixed by the '\%' sign (similar to URL encoding) before publishing to a topic.
+All unprintable characters (with HEX value less than 0x20 or with the value 0x7F), as well as '#', '$', '+', '/', ' ' and '\%' SHALL be substituted.
+For a subsequent device with a SHIP ID "12345%6#7/" the message SHALL be published to the topic `clseedi/from-localdevice/ship/12345%256%237%2F`
+The receiving side SHALL look for the `%` character in the last topic level and decode if necessary to obtain the original ID of the subsequent device
+<span id="REQ-52"><a href="#REQ-52">[REQ-52]</a></span>.
+
+
+# Connection state of the local device
+
+To ensure the backend is always aware of the connection status of the local device, a message of the type
+`de.keo-connectivity.clseedi.localDeviceStatus` SHALL be sent to the \<FROM_LOCAL_DEVICE\>/<b>deviceStatus</b> topic
+<span id="REQ-72"><a href="#REQ-72">[REQ-72]</a></span>.
+This message includes a boolean field representing the connection status. Upon establishing a connection, the message
+SHALL be sent with the retain flag set to true and the connection status set to true. Simultaneously, the same message
+SHALL be configured as the Last Will and Testament (LWT) with the connection status set to false. Additionally, the
+message id should be newly generated each time the message is created. This setup ensures that the backend can always
+determine the current connection status of the local device <span id="REQ-53"><a href="#REQ-53">[REQ-53]</a></span>.
+
+* [de.keo-connectivity.clseedi.localDeviceStatus.schema.json](de.keo-connectivity.clseedi.localDeviceStatus.schema.json) defines the structure of this message.
+* [de.keo-connectivity.clseedi.localDeviceStatus.json](de.keo-connectivity.clseedi.localDeviceStatus.json) an example showing the device not connected, without timestamp.
+* [de.keo-connectivity.clseedi.localDeviceStatus_connected.json](de.keo-connectivity.clseedi.localDeviceStatus_connected.json) an example showing the device connected, with timestamp.
+
+The timestamp is defined optional in the schema; however, it SHALL be set when the connection status is true and SHALL not be set for the LWT, as the disconnection time is unknown
+<span id="REQ-54"><a href="#REQ-54">[REQ-54]</a></span>.
 
 # Data Model
 
@@ -122,12 +175,19 @@ distinct file. Two additional files hold everything together:
 * [definitions.schema.json](definitions.schema.json) defines reusable data types. The payload schemas refer to these
   type definitions.
 
+The header of the message complies with the [CloudEvents v1.0 specification](https://github.com/cloudevents/spec/blob/ce%40v1.0/spec.md)
+
 The payload types are explained in the following sections.
 
 ## Control
 
-A control message allows the backend to communicate its desires to the local device. Take a look at the schema and some
-examples to get started:
+A control message allows the backend to communicate its desires to the local device or one of the subsequent devices.
+If the local device does not support the functionality, required to execute the control command, the control message SHALL be replied with `"errorNumber": 4` (command not supported)
+<span id="REQ-55"><a href="#REQ-55">[REQ-55]</a></span>.
+If the subsequent device is not connected or if it does not support the functionality, required to execute the control command,
+the control message SHALL be replied with `"errorNumber": 4` (command not supported)
+<span id="REQ-56"><a href="#REQ-56">[REQ-56]</a></span>.
+Take a look at the schema and some examples to get started:
 
 * [schema](clseedi/de.keo-connectivity.clseedi.control.schema.json)
 * examples
@@ -135,6 +195,7 @@ examples to get started:
   * [Setting a failsafe](clseedi/examples/de.keo-connectivity.clseedi.control_failsafes.json)
   * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
   * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
+  * [Trusting based on SHIP pairing service](clseedi/examples/de.keo-connectivity.clseedi.control.shipPairingService.json)
   * [Configure notifications](clseedi/examples/de.keo-connectivity.clseedi.control.notify.json)
 
 The control payload can consist of the following top-level properties:
@@ -144,15 +205,25 @@ The control payload can consist of the following top-level properties:
 * `trust` - certificates and/or SKIs to be trusted for the SHIP connections the local device maintains
 * `notify` - configure notifications for sending measurement data
 
-In case that the control message is a reply to a `read` message (i.e. has a `relation`), all top-level properties can be set, otherwise only a single top-level element is allowed.
+In case that the control message is a reply to a `read` message (i.e. has a `relation`), all top-level properties can be
+set, otherwise only a single top-level element is allowed
+<span id="REQ-9"><a href="#REQ-9">[REQ-9]</a></span>.
 
 When receiving a `control` message
 - the top-level properties `trust` and `notify` overwrite the previous state of those properties entirely
+  <span id="REQ-10"><a href="#REQ-10">[REQ-10]</a></span>
 - the elements `limits.power.active.consumption`, `limits.power.active.production`, `failsafes.power.active.consumption`
   and `failsafes.power.active.production` replace the previous state of that element entirely
+  <span id="REQ-11"><a href="#REQ-11">[REQ-11]</a></span>
 
-When receiving a `control` message, that is not a reply to a `read`, the local device SHALL send an [acknowledgement message](@ref ack). A positive
-acknowledgement message means that the element contained in the message was valid and has been processed.
+When receiving a `control` message, that is not a reply to a `read`, the local device SHALL send an
+[acknowledgement message](@ref ack)
+<span id="REQ-12"><a href="#REQ-12">[REQ-12]</a></span>.
+A positive acknowledgement message means that the element contained in the message was valid and has been processed.
+
+If an acknowledgment message for a `control` message is still pending and the next `control` message for the same device and the same
+top-level property is received, the backend SHALL reply with a negative acknowledgement set to `"errorNumber": 3`
+(command execution error) <span id="REQ-73"><a href="#REQ-73">[REQ-73]</a></span>.
 
 The different top-level properties are explained in more detail in the following sections.
 
@@ -167,7 +238,7 @@ A power limit consists of these properties:
 * `active` - if set to true the limit is to be applied by the local device, if set to false no limit has to be applied
 * `duration` - the time in seconds the limit is valid, starting at the time it is received (optional)
 
-For example, a consumption limit of 5000 W that shall be applied for 3600 seconds (one hour) would be expressed like this:
+For example, a consumption limit of 5000 W that SHALL be applied for 3600 seconds (one hour) would be expressed like this:
 
 ```
 {
@@ -185,14 +256,18 @@ For example, a consumption limit of 5000 W that shall be applied for 3600 second
 }
 ```
 
-Limits always have a positive value. When a duration is specified, it must also be positive.
+Limits always have a positive value and a positive duration
+<span id="REQ-13"><a href="#REQ-13">[REQ-13]</a></span>.
 It is not allowed to send a consumption and a production limit in one message.
+<span id="REQ-14"><a href="#REQ-14">[REQ-14]</a></span>
 
 The local device SHALL reply with a positive acknowledgement message when the limit can be applied, i.e. the
-controllable system has accepted it, otherwise it SHALL reply with a negative acknowledgement message with
-`"errorNumber": 3` (command execution error). This can happen, for example when the controllable system rejects the
-limit. When no controllable system is attached the local device SHALL reply with a negative acknowledgement message
-with `"errorNumber": 4` (command not supported).
+controllable system has accepted it
+<span id="REQ-15"><a href="#REQ-15">[REQ-15]</a></span>,
+otherwise it SHALL reply with a negative acknowledgement message with `"errorNumber": 3` (command execution error)
+<span id="REQ-16"><a href="#REQ-16">[REQ-16]</a></span>.
+This can happen, for example when the controllable system rejects the limit. When no controllable system is attached
+the local device SHALL reply with a negative acknowledgement message with `"errorNumber": 4` (command not supported).
 
 The `active` flag can be used to deactivate a previously set limit.
 
@@ -202,13 +277,15 @@ Failsafe limits allow the backend to define a safe state the local device transi
 local network is hindered. Semantically, failsafe values are the same as in the EEBUS use cases LPC and LPP. In CLS.EEDI
 a failsafe value is expressed in W as an integer. It represents active power.
 
-It is not allowed to send a consumption and a production failsafe in one message.
+It is not allowed to send a consumption and a production failsafe in one message
+<span id="REQ-17"><a href="#REQ-17">[REQ-17]</a></span>.
 
 The local device SHALL reply with an positive acknowledgement message when the failsafe can be applied, i.e. the
-controllable system has accepted it, otherwise it SHALL reply with a negative acknowledgement message with
-`"errorNumber": 3` (command execution error). This can happen, when the controllable system rejects the failsafe value.
-When no controllable system is attached the local device SHALL reply with a negative acknowledgement message
-with `"errorNumber": 4` (command not supported).
+controllable system has accepted it
+<span id="REQ-18"><a href="#REQ-18">[REQ-18]</a></span>,
+otherwise it SHALL reply with a negative acknowledgement message with `"errorNumber": 3` (command execution error)
+<span id="REQ-19"><a href="#REQ-19">[REQ-19]</a></span>.
+This can happen, when the controllable system rejects the failsafe value.
 
 In the EEBUS use cases LPC and LPP there is a heartbeat mechanism to monitor connectivity in the home area network and
 trigger the failsafe state. Because CLS.EEDI is used for wide area communication there is no heartbeat mechanism.
@@ -223,24 +300,38 @@ SHIP peer(s) will either be an energy management system (CEM) or one or more pow
 Establishing a SHIP connection requires mutual trust. If trust commissioning is not done locally, it can be performed by
 the backend. The backend can send a list of full certificates or just SKIs (the SHA-1 hash of a certificate's public
 key) to the local device. The local device will then trust the certificates or the SKIs. A new list fully replaces
-existing trust.
+existing trust
+<span id="REQ-22"><a href="#REQ-22">[REQ-22]</a></span>.
+
+Sending trust entries to a subsequent device is not allowed and SHALL be replied with `"errorNumber": 2` (protocol error)
+<span id="REQ-60"><a href="#REQ-60">[REQ-60]</a></span>.
 
 A trust payload is an array. Each array item can have one of two properties:
 
 * `certificate` - a full X.509 SHIP certificate in DER format, hex-encoded
 * `ski` - just an SKI
+* `shipPairingService` - a SHIP pairing service object
 
-Here are two examples:
+The `shipPairingService` object implements the `EEBus TR SHIP pairing service proposal`, which allows to establish EEBUS SHIP mutual trust
+without further local interaction. For this a special mDns service must be announced by the local device, which requires
+the backend to send the following data to the local device:
+* `forId` - the SHIP ID of the device, which must be trusted
+* `forPar` - the SHA256 fingerprint of the trusted device's certificate
+* `secret` - the secret string, read out locally from the trusted device
+Note: The schema also defines `ski`, but this can only be set by the local device. Please have a look for further details at [StateTrust](@ref StateTrust).
+
+Here are three examples:
 
 * [Trusting based on a certificate](clseedi/examples/de.keo-connectivity.clseedi.control.trust_certificate.json)
 * [Trusting based on just an SKI](clseedi/examples/de.keo-connectivity.clseedi.control.trust_ski.json)
+* [Trusting based SHIP pairing service](clseedi/examples/de.keo-connectivity.clseedi.control.shipPairingService.json)
 
 SHIP trust setup usually happens just once, for example during the initial installation of the local devices.
 
 ### Notify
 
 Using this property, the backend can configure notifications of measurement values to be sent by the local device. To
-configure these notifications, the following properties need to be specified:
+configure these notifications, all following properties SHALL be set:
 
 * `interval` - The seconds between notifications
 * `endTime` - The timestamp indicating the end of the notification period
@@ -255,9 +346,14 @@ gcp          | The backend wants to be notified about measurement data of the gr
 controllable | The backend wants to be notified about aggregated measurement data of all controllable devices in the local network.
 
 If other values than the ones defined in this table are encountered, no notifications for that source type SHALL be
-sent.
+sent
+<span id="REQ-23"><a href="#REQ-23">[REQ-23]</a></span>.
 
-The notifications SHALL be sent as a `state` message with measurement data.
+The notifications SHALL be sent as a `state` message with measurement data
+<span id="REQ-24"><a href="#REQ-24">[REQ-24]</a></span>.
+
+To disable the notifications a control message with an empty notify element SHALL be sent
+<span id="REQ-25"><a href="#REQ-25">[REQ-25]</a></span>.
 
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.control.notify.json) demonstrating how to configure
 notifications.
@@ -265,28 +361,32 @@ notifications.
 ## Acknowledgement {#ack}
 
 An acknowledgement message SHALL be sent as a reply by the local device to communicate whether the corresponding request
-was valid and could be executed or not.
+was valid and could be executed or not
+<span id="REQ-26"><a href="#REQ-26">[REQ-26]</a></span>.
 
 The following message types can cause an acknowledgement message:
 
 - `de.keo-connectivity.clseedi.read`
 - `de.keo-connectivity.clseedi.control`
 
-If the `control` message is a reply to a `read` (i.e. has a `relation` filed) it SHALL NOT be acknowledged.
+If the `control` message is a reply to a `read` (i.e. has a `relation` filed) it SHALL NOT be acknowledged
+<span id="REQ-27"><a href="#REQ-27">[REQ-27]</a></span>.
 
-Other message types SHALL NOT cause acknowledgement messages.
+Other message types SHALL NOT cause acknowledgement messages
+<span id="REQ-28"><a href="#REQ-28">[REQ-28]</a></span>.
 
 The acknowledgement is represented by the `errorNumber` element in the acknowledgement message. A value greater than 0 indicates an error.
 
 The following error numbers are defined:
 
-`errorNumber` | Error type              | Description/Reason
-------------- | ----------------------- | ----------------------------------------------------------------------------------------------
-0             | Success                 | Success
-1             | Schema error            | Invalid message, unable to parse, missing mandatory element
-2             | Protocol error          | Unexpected message, e.g. state message with an unknown relation, version mismatch or empty control message
-3             | Command execution error | The command could not be executed. There can be many reasons for that error, e.g. limit is rejected by the local device, certificate in trust is invalid or cannot be written, ...
-4             | Command not supported   | The command is not supported, e.g. there is no controllable system which supports limitation (see also [supportedUseCases](@ref supportedUseCases))
+`errorNumber` | Error type                    | Description/Reason
+------------- | ----------------------------- | ----------------------------------------------------------------------------------------------
+0             | Success                       | Success
+1             | Schema error                  | Invalid message, unable to parse, missing mandatory element
+2             | Protocol error                | Unexpected message, e.g. state message with an unknown relation, version mismatch or empty control message
+3             | Command execution error       | The command could not be executed. There can be many reasons for that error, e.g. limit is rejected by the local device, certificate in trust is invalid or cannot be written, ...
+4             | Command not supported         | The command is not supported, e.g. there is no controllable system which supports limitation or that understands tariffs (see also [supportedUseCases](@ref supportedUseCases))
+5             | Subsequent device unavailable | The subsequent device is unavailable or unknown
 
 Take a look at the schema and an example:
 
@@ -309,27 +409,37 @@ The backend can read the current state of the local device by sending a `read` m
 section for details). In the case of a `read` message with empty `parameters`, all properties that are not present in
 the reply are expected to be unavailable or unset on the local device. Consequently, a `state` message caused by a
 `read` message with empty `parameters` always represents the complete state of the local device and overwrites all
-previous `state` messages received from the local device.
+previous `state` messages received from the local device
+<span id="REQ-29"><a href="#REQ-29">[REQ-29]</a></span>.
 
 The backend can configure which parts of the local device's state it wants to receive, using the `parameters` property.
 
 When receiving a `read` message with non-empty `parameters` ("selective read") the local device SHALL reply with a
-`state` message. All top-level properties that are listed in `parameters` for which the local device does not have data,
-SHALL NOT be present in the `state` message. All top-level properties that are listed in `parameters` for which the
-local device does have data, SHALL be present in the `state` message. All top-level properties that are not listed in
-the `parameters` SHALL NOT be present in the `state` message.
+`state` message
+<span id="REQ-30"><a href="#REQ-30">[REQ-30]</a></span>.
+All top-level properties that are listed in `parameters` for which the local device does not have data, SHALL NOT be
+present in the `state` message
+<span id="REQ-31"><a href="#REQ-31">[REQ-31]</a></span>.
+All top-level properties that are listed in `parameters` for which the local device does have data, SHALL be present in
+the `state` message
+<span id="REQ-32"><a href="#REQ-32">[REQ-32]</a></span>.
+All top-level properties that are not listed in the `parameters` SHALL NOT be present in the `state` message.
+<span id="REQ-33"><a href="#REQ-33">[REQ-33]</a></span>.
 
 When receiving a `state` message that was caused by a `read` message with non-empty `parameters`,  all top-level
-properties that are present in the `state` message overwrite all previous state of that top-level property. All
-top-level properties that were listed in `parameters` that are not present in the `state` message are expected to not be
-available anymore at the local device.
+properties that are present in the `state` message overwrite all previous state of that top-level property
+<span id="REQ-34"><a href="#REQ-34">[REQ-34]</a></span>.
+All top-level properties that were listed in `parameters` that are not present in the `state` message are expected to
+not be available anymore at the local device.
+<span id="REQ-35"><a href="#REQ-35">[REQ-35]</a></span>.
 
 Additionally, a local device can send unsolicited updates of its state. When notifying the state, not all top-level
 properties have to be set. This allows the local device to notify only the properties that have changed. When any of the
-`limits`, `failsafes`, `supportedEebusUseCases` or `notify` top-level property
-are set, they SHALL reflect the complete current state of those top-level properties. When the `measurements` top-level
-property is set, every array element SHALL reflect the complete current state of the measurement source represented by
-that `id`.
+`limits`, `failsafes`, `supportedEebusUseCases` or `notify` top-level property are set, they SHALL reflect the
+complete current state of those top-level properties <span id="REQ-36"><a href="#REQ-36">[REQ-36]</a></span>.
+When the `measurements` top-level property is set, every array element SHALL reflect the complete current state of the
+measurement source represented by that `id`.
+<span id="REQ-37"><a href="#REQ-37">[REQ-37]</a></span>.
 
 Take a look at the schema and an example:
 
@@ -339,9 +449,10 @@ Take a look at the schema and an example:
 
 ### Trust {#StateTrust}
 
-The `trust` property in the `state` reflects the currently trusted SHIP devices.
-However, as the only information that always is known is the SKI (either entered as SKI or read from the certificate),
-only the SKI is ever returned. This also applies if the trust was added via a certificate.
+The `trust` property in the `state` contains an array of the currently trusted SHIP devices.
+An array entry with `ski` value reflects either an SKI, received from the backend or an SKI, extracted from
+the certificate, which was received from the backend (the certificate itself is never returned), or an SKI of the peer,
+which was trusted using the SHIP pairing service and the connection to which was already successfully established.
 If the backend establishes trust based on certificates, it must be able to read/calculate
 the SKI in order to perform a comparison with the stored trust data.
 
@@ -355,11 +466,49 @@ the SKI in order to perform a comparison with the stored trust data.
 }
 ```
 
+With the introduction of the shipPairingService, the backend is able to recognize whether a trust has been successfully established or not.
+If the trust is read, the shipPairingService entry always contains the initial forPar, forId and secret and may or may not contain the ski,
+depending on if the trust is still pending (connection never established) or not.
+
+Example of trust pending
+
+```
+    "trust": [
+            {
+            "shipPairingService": {
+                "forId": "i:98765_u:238bfn2299vfb3",
+                "forPar": "e58fd8e1a1b3f9632a81febe11954962ae2b9e5b0eb567f28c2a01b2c1009073",
+                "secret": "b53236794fb10b75e531ce316145621d"
+            }
+        }
+    ]
+```
+
+Example of trust established
+
+```
+    "trust": [
+            {
+                "ski": "607d3342a4eeb06f33094386644991cd4b80125b"
+            },
+            {
+            "shipPairingService": {
+                "forId": "i:98765_u:238bfn2299vfb3",
+                "forPar": "e58fd8e1a1b3f9632a81febe11954962ae2b9e5b0eb567f28c2a01b2c1009073",
+                "secret": "b53236794fb10b75e531ce316145621d",
+                "ski": "607d3342a4eeb06f33094386644991cd4b80125b"
+            }
+        }
+    ]
+```
+
+
 ### Limits {#StateLimits}
 
 The `limits` property in the `state` reflects the current power limits in terms of the EEBUS use cases LPC and LPP.
 The `active` flag indicates if the power limit has been accepted and is active.
-The `duration` indicates the remaining active time in seconds of the power limit.
+The `duration` indicates the remaining active time in seconds of the power limit
+<span id="REQ-38"><a href="#REQ-38">[REQ-38]</a></span>.
 
 ```
 {
@@ -397,11 +546,16 @@ LPP.
 
 ### Measurements {#StateMeasurements}
 
-The measurement values communicated via CLS.EEDI always represent the latest measurements the local device has received from the corresponding measurement
-source. If a measurement source disappears, the measurement values of that source SHALL be removed in CLS.EEDI.
+The measurement values communicated via CLS.EEDI always represent the latest measurements the local device has received
+from the corresponding measurement source
+<span id="REQ-40"><a href="#REQ-40">[REQ-40]</a></span>.
+If a measurement source disappears, the measurement values of that source SHALL be removed in CLS.EEDI
+<span id="REQ-41"><a href="#REQ-41">[REQ-41]</a></span>.
 Measurement values that are indicated to be invalid (e.g. out of range) by the measurement source SHALL be removed in
-CLS.EEDI. However, the technology used to obtain measurements from the measurement source, may not support communicating
-invalid values.
+CLS.EEDI
+<span id="REQ-42"><a href="#REQ-42">[REQ-42]</a></span>.
+However, the technology used to obtain measurements from the measurement source, may not support communicating invalid
+values.
 
 The array `measurements` can contain multiple sets of measurement values. Each JSON object in the array represents one
 set of measurement values. Each set of measurement values consists of
@@ -429,7 +583,8 @@ gcp          | Represents the grid connection point of a premise.
 controllable | Represents all controllable devices in the local network.
 
 If other values than the ones defined in this table are encountered, the complete set of metering data for this source
-SHALL be ignored.
+SHALL be ignored
+<span id="REQ-43"><a href="#REQ-43">[REQ-43]</a></span>.
 
 The following table shows the data points that can be communicated.
 
@@ -450,17 +605,21 @@ voltage.c-n      | Voltage between phase C and neutral as defined by the EEBUS u
 frequency        | Frequency as defined by the EEBUS use cases MGCP and MPC
 
 If notifications have been configured by the backend via the `notify` property of the `control` message, the local
-device SHALL periodically send `state` messages with the `measurements` property set.
+device SHALL periodically send `state` messages with the `measurements` property set
+<span id="REQ-44"><a href="#REQ-44">[REQ-44]</a></span>.
 
 Here is an [example](clseedi/examples/de.keo-connectivity.clseedi.state.measurements.json) showing the observed state
 of the measurement data.
 
 ### Supported EEBUS use cases {#supportedUseCases}
 
-The `supportedEebusUseCases` property describes the EEBUS use cases supported by the local device. The presence of an
-EEBUS use case in this array indicates that the use case or equivalent functionality is available in the local network.
-If the functionality for a use case is no longer available the use case SHALL be removed from the array. A `state`
-message including the `supportedEebusUseCases` property SHALL be sent to the backend immediately after the change.
+The `supportedEebusUseCases` property describes the EEBUS use cases supported by the local device or the subsequent device. The presence of an
+EEBUS use case in this array indicates that the use case or equivalent functionality is supported by the device.
+If the functionality for a use case is no longer available the use case SHALL be removed from the array
+<span id="REQ-45"><a href="#REQ-45">[REQ-45]</a></span>.
+A `state` message including the `supportedEebusUseCases` property SHALL be sent to the backend immediately after the
+change
+<span id="REQ-46"><a href="#REQ-46">[REQ-46]</a></span>.
 
 The following table defines which functionality is represented how in the `supportedEebusUseCases` element.
 
@@ -471,13 +630,14 @@ The following table defines which functionality is represented how in the `suppo
 `mgcp`                   | Monitoring of Grid Connection Point - metering data maps to this use case
 `mpc`                    | Monitoring of Power Consumption - metering data maps to this use case
 
-If other values than the ones defined in this table are encountered, the array entry SHALL be ignored.
+If other values than the ones defined in this table are encountered, the array entry SHALL be ignored
+<span id="REQ-47"><a href="#REQ-47">[REQ-47]</a></span>.
 
-The following top-level properties of `control` messages can be expected to be handled by local device when the use case is present:
+The following top-level properties of `control` messages can be expected to be handled by the receiving device when the use case is present:
 * `lpc` - [limits](@ref ControlLimits) and [failsafes](@ref ControlFailsafes)
 * `lpp` - [limits](@ref ControlLimits) and [failsafes](@ref ControlFailsafes)
 
-The following top-level properties of `state` messages can be expected to be set by the local network when the use case is present:
+The following top-level properties of `state` messages can be expected to be set by the device when the use case is present:
 * `lpc` - [limits](@ref StateLimits) and [failsafes](@ref StateFailsafes)
 * `lpp` - [limits](@ref StateLimits) and [failsafes](@ref StateFailsafes)
 * `mgcp` - [measurements](@ref StateMeasurements)
@@ -494,14 +654,16 @@ of the configured notifications.
 
 Either side of the connection can send a `read` message to the other side. Upon receiving a `read` message,
 
-* the backend sends a `control` message
-* the local device sends a `state` message
+* the backend sends a `control` message <span id="REQ-48"><a href="#REQ-48">[REQ-48]</a></span>.
+* the local device sends a `state` message which represents its own state or the state of a subsequent device<span id="REQ-49"><a href="#REQ-49">[REQ-49]</a></span>.
 
 The backend can configure the specific information it wants to receive from the local device by specifying the desired
 top-level [state](@ref State) properties in the `read` message. By selectively choosing the parameters, the backend can
 effectively filter the data and retrieve only the relevant information. Alternatively, if the `read` message is sent
 with an empty parameter list, it indicates that the backend intends to receive all available information up to the
 current moment.
+The trust element SHALL NOT be read from subsequent devices, otherwise it SHALL be replied with `"errorNumber": 2` (protocol error)
+<span id="REQ-68"><a href="#REQ-68">[REQ-68]</a></span>.
 
 The following list shows the top-level properties from which to retrieve information:
 * `trust`
@@ -512,7 +674,8 @@ The following list shows the top-level properties from which to retrieve informa
 * `notify`
 
 The local device cannot configure the information it wants to receive. Instead, upon sending a `read` message, the
-backend SHALL send all the information accumulated up to that moment in a `control` message.
+backend SHALL send all the information accumulated up to that moment in a `control` message
+<span id="REQ-50"><a href="#REQ-50">[REQ-50]</a></span>.
 
 Take a look at the schema and examples:
 

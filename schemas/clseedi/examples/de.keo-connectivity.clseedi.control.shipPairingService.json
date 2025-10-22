@@ -1,0 +1,18 @@
+{
+    "type": "de.keo-connectivity.clseedi.control",
+    "source": "backend",
+    "id": "9d287fce-3ce5-4b7d-9562-99fd0cd73d78",
+    "specversion": "1.0",
+    "data": {
+        "protocol": "1.2.0",
+        "trust": [
+            {
+                "shipPairingService": {
+                    "forId": "i:98765_u:238bfn2299vfb3",
+                    "forPar": "e58fd8e1a1b3f9632a81febe11954962ae2b9e5b0eb567f28c2a01b2c1009073",
+                    "secret": "b53236794fb10b75e531ce316145621d"
+                }
+            }
+        ]
+    }
+}

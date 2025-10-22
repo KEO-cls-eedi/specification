@@ -60,6 +60,26 @@
                     },
                     "certificate": {
                         "$ref": "file:definitions.schema.json#/definitions/certificate"
+                    },
+                    "shipPairingService": {
+                        "description": "Representation of the SHIP pairing serivce",
+                        "type": "object",
+                        "properties": {
+                            "forId": {
+                                "$ref": "file:definitions.schema.json#/definitions/forId"
+                            },
+                            "forPar": {
+                                "$ref": "file:definitions.schema.json#/definitions/forPar"
+                            },
+                            "secret": {
+                                "$ref": "file:definitions.schema.json#/definitions/secret"
+                            }
+                        },
+                        "required": [
+                            "forId",
+                            "forPar",
+                            "secret"
+                        ]
                     }
                 }
             }
