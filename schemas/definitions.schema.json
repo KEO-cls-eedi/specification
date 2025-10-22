@@ -349,12 +349,12 @@
         },
         "certificate": {
             "type": "string",
-            "pattern": "^[a-f|0-9]+$",
+            "pattern": "^[a-fA-F0-9]+$",
             "description": "Certificate (X.509 in DER) as hex string"
         },
         "ski": {
             "type": "string",
-            "pattern": "^[a-f0-9]{40}$",
+            "pattern": "^[a-fA-F0-9]{40}$",
             "description": "Subject Key Identifier (SKI)",
             "minLength": 40,
             "maxLength": 40,
@@ -371,7 +371,7 @@
         },
         "forPar": {
             "type": "string",
-            "pattern": "^[a-f0-9]{64}$",
+            "pattern": "^[a-fA-F0-9]{64}$",
             "description": "SHA-256 fingerprint of devA-certificate",
             "minLength": 64,
             "maxLength": 64,
@@ -381,7 +381,7 @@
         },
         "secret": {
             "type": "string",
-            "pattern": "^[a-f0-9]{32}$",
+            "pattern": "^[a-fA-F0-9]{32}$",
             "description": "devA secret for shipPairing",
             "minLength": 32,
             "maxLength": 32,
